@@ -7,6 +7,8 @@ import { asyncVisitor, visitAsync } from "yaml";
 import { Subject } from 'await-notify';
 import { Breakpoint, Scope, Source, StackFrame, Thread } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
+import { Stack } from "./stack";
+import assert from "assert";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -42,23 +44,41 @@ export type ExecutionPointer = {
 	// path: readonly (Node | Document<Node, true> | Pair<unknown, unknown>)[];
 };
 
+type ExecutionContext = {
+	execution: Subject;
+	executionPointer: ExecutionPointer | null;
+};
+
 export class Debugger extends EventEmitter {
 	private documentManager: DocumentManager;
-	private execution = new Subject();
-	private executionPointer: ExecutionPointer | null = null;
 	private static readonly MainThreadId: number = 1;
+	private contexts: Stack<ExecutionContext> = new Stack();
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
 
 		this.documentManager = new DocumentManager(fileAccessor);
+		this.contexts.push({
+			execution: new Subject(),
+			executionPointer: null
+		});
+	}
+
+	private currentContext(): ExecutionContext {
+		const ctxt = this.contexts.top();
+		if (!ctxt) {
+			throw new Error("Expected to have at least one execution context.");
+		}
+
+		return ctxt;
 	}
 
 	private async newDocument(file: string) {
 		const doc = await this.documentManager.getDoc(file);
 		const visitor: asyncVisitor = {
 			Pair: async (symbol, value, path): Promise<symbol | void> => {
-				this.executionPointer = {
+				const ctxt = this.currentContext();
+				ctxt.executionPointer = {
 					file,
 					symbol,
 					// path
@@ -67,7 +87,7 @@ export class Debugger extends EventEmitter {
 				const k = value.key?.toString();
 				if (k?.startsWith("abc")) {
 					this.emit("stopOnStep", Debugger.MainThreadId);
-					await this.execution.wait();
+					await ctxt.execution.wait();
 				}
 			}
 		};
@@ -82,8 +102,8 @@ export class Debugger extends EventEmitter {
 	}
 
 	public resume() {
+		this.currentContext().execution.notify();
 		this.emit("continue", Debugger.MainThreadId);
-		this.execution.notify();
 	}
 
 	public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
@@ -123,7 +143,7 @@ export class Debugger extends EventEmitter {
 			return [{
                 id: 1,
                 name: "frame name",
-                source: new Source("frame", this.executionPointer?.file),
+                source: new Source("frame", this.currentContext().executionPointer?.file),
                 line: ++this.line,
                 column: 1,
             }];
