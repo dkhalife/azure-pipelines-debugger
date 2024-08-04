@@ -5,7 +5,7 @@ import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
 import { asyncVisitor, visitAsync } from "yaml";
 import { Subject } from 'await-notify';
-import { Scope, StackFrame, Thread } from "@vscode/debugadapter";
+import { Scope, Source, StackFrame, Thread } from "@vscode/debugadapter";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -35,9 +35,16 @@ export type ExceptionInfo = {
 	details?: ExceptionDetails;
 };
 
+export type ExecutionPointer = {
+	file: string;
+	symbol: number | "key" | "value" | string | null;
+	// path: readonly (Node | Document<Node, true> | Pair<unknown, unknown>)[];
+};
+
 export class Debugger extends EventEmitter {
 	private documentManager: DocumentManager;
 	private execution = new Subject();
+	private executionPointer: ExecutionPointer | null = null;
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
@@ -45,11 +52,22 @@ export class Debugger extends EventEmitter {
 		this.documentManager = new DocumentManager(fileAccessor);
 	}
 
-	public async start(entry: string): Promise<void> {
-		const doc = await this.documentManager.getDoc(entry);
+	public async start(file: string): Promise<void> {
+		const doc = await this.documentManager.getDoc(file);
 
 		const DocumentVisitor: asyncVisitor = {
-			Pair: async (key, value, path): Promise<symbol | void> => {
+			Pair: async (symbol, value, path): Promise<symbol | void> => {
+				this.executionPointer = {
+					file,
+					symbol,
+					// path
+				};
+
+				const k = value.key?.toString();
+				if (k?.startsWith("abc")) {
+					this.emit("stopOnStep");
+					await this.execution.wait();
+				}
 			}
 		};
 
@@ -70,10 +88,26 @@ export class Debugger extends EventEmitter {
 	}
 
 	public getThreads(): Thread[] {
-		return [];
+		return [
+			{
+				id: 1,
+				name: "main"
+			}
+		];
 	}
 
-	public getStackTrace(): StackFrame[] {
+	private line = 0;
+	public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {
+		if (startFrame === 0) {
+			return [{
+                id: 1,
+                name: "frame name",
+                source: new Source("frame", this.executionPointer?.file),
+                line: ++this.line,
+                column: 1,
+            }];
+		}
+
 		return [];
 	}
 

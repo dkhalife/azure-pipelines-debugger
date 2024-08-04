@@ -110,7 +110,7 @@ export class DebugSession extends LoggingDebugSession {
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-		const frames = this.debugger.getStackTrace();
+		const frames = this.debugger.getStackTrace(args.startFrame, args.levels);
 
 		response.body = response.body || {};
 		response.body.stackFrames = frames;
