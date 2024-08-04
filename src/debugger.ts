@@ -46,6 +46,7 @@ export class Debugger extends EventEmitter {
 	private documentManager: DocumentManager;
 	private execution = new Subject();
 	private executionPointer: ExecutionPointer | null = null;
+	private static readonly MainThreadId: number = 1;
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
@@ -66,7 +67,7 @@ export class Debugger extends EventEmitter {
 
 				const k = value.key?.toString();
 				if (k?.startsWith("abc")) {
-					this.emit("stopOnStep");
+					this.emit("stopOnStep", Debugger.MainThreadId);
 					await this.execution.wait();
 				}
 			}
@@ -78,7 +79,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public resume() {
-		this.emit("continue");
+		this.emit("continue", Debugger.MainThreadId);
 		this.execution.notify();
 	}
 

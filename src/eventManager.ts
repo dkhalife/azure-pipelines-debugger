@@ -6,11 +6,11 @@ export const registerEvents = (session: LoggingDebugSession, runtime: Debugger) 
         session.sendEvent(new TerminatedEvent());
     });
 
-    runtime.on("continue", () => {
-        session.sendEvent(new ContinuedEvent(1, true));
+    runtime.on("continue", (threadId: number) => {
+        session.sendEvent(new ContinuedEvent(threadId, true));
     });
 
-    runtime.on("stopOnStep", () => {
-        session.sendEvent(new StoppedEvent('step', 1));
+    runtime.on("stopOnStep", (threadId: number) => {
+        session.sendEvent(new StoppedEvent('step', threadId));
     });
 };
