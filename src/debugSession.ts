@@ -7,7 +7,8 @@ import {
     StoppedEvent,
     Scope,
     Thread,
-    Handles
+    Handles,
+	Source
 	
 	} from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
@@ -20,6 +21,7 @@ export class DebugSession extends LoggingDebugSession {
 	private _variableHandles = new Handles<'locals' | 'globals'>();
 	private _configurationDone = new Subject();
     private debugger: Debugger;
+	private entry: string = "";
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -33,7 +35,9 @@ export class DebugSession extends LoggingDebugSession {
 
         this.debugger = new Debugger(fileAccessor);
 		this.debugger.on('stopOnBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('breakpoint', 1));
+			// this.sendEvent(new StoppedEvent('breakpoint', 1));
+			this.sendEvent(new StoppedEvent(`exception`, 1, "Something went terribly wrong"));
+			//this.sendEvent(new StoppedEvent(`exception(Foo)`, 1, "Some warning"));
 		});
 	}
 
@@ -98,6 +102,7 @@ export class DebugSession extends LoggingDebugSession {
 		// wait 1 second until configuration has finished (and configurationDoneRequest has been called)
 		await this._configurationDone.wait(1000);
 
+		this.entry = args.entry;
         await this.debugger.start(args.entry);
 
         this.sendResponse(response);
@@ -125,39 +130,25 @@ export class DebugSession extends LoggingDebugSession {
 		response.body = {
 			threads: [
 				new Thread(1, "thread 1"),
-				new Thread(2, "thread 2"),
 			]
 		};
 		this.sendResponse(response);
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-		response.body = {
-			stackFrames: [{
+		response.body = response.body || {};
+
+		if (args.startFrame === 0) {
+			response.body.stackFrames = [{
                 id: 1,
-                /** The name of the stack frame, typically a method name. */
                 name: "frame name",
-                /** The source of the frame. */
-                //source?: Source;
-                /** The line within the source of the frame. If the source attribute is missing or doesn't exist, `line` is 0 and should be ignored by the client. */
-                line: 10,
-                /** Start position of the range covered by the stack frame. It is measured in UTF-16 code units and the client capability `columnsStartAt1` determines whether it is 0- or 1-based. If attribute `source` is missing or doesn't exist, `column` is 0 and should be ignored by the client. */
-                column: 0,
-                /** The end line of the range covered by the stack frame. */
-                // endLine?: number;
-                /** End position of the range covered by the stack frame. It is measured in UTF-16 code units and the client capability `columnsStartAt1` determines whether it is 0- or 1-based. */
-                // endColumn?: number;
-                /** A memory reference for the current instruction pointer in this frame. */
-                // instructionPointerReference?: string;
-                /** The module associated with this frame, if any. */
-                // moduleId?: number | string;
-                /** A hint for how to present this frame in the UI.
-                    A value of `label` can be used to indicate that the frame is an artificial frame that is used as a visual label or separator. A value of `subtle` can be used to change the appearance of a frame in a 'subtle' way.
-                */
-                presentationHint: 'normal'
-            }],
-			totalFrames: 1			// stk.count is the correct size, should result in a max. of two requests
-		};
+                source: new Source("frame", this.entry),
+                line: 4,
+                column: 5,
+            }];
+			response.body.totalFrames = 1;
+		}
+
 		this.sendResponse(response);
 	}
 
@@ -168,6 +159,20 @@ export class DebugSession extends LoggingDebugSession {
 				new Scope("Locals", this._variableHandles.create('locals'), false),
 				new Scope("Globals", this._variableHandles.create('globals'), true)
 			]
+		};
+		this.sendResponse(response);
+	}
+
+	protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {
+		response.body = {
+			exceptionId: 'Exception ID',
+			description: 'This is a descriptive description of the exception.',
+			breakMode: 'always',
+			details: {
+				message: 'Message contained in the exception.',
+				typeName: 'Short type name of the exception object',
+				stackTrace: 'stack frame 1\nstack frame 2',
+			}
 		};
 		this.sendResponse(response);
 	}
