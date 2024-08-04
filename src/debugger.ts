@@ -70,6 +70,15 @@ export class Debugger extends EventEmitter {
 					this.emit("stopOnStep", Debugger.MainThreadId);
 					await this.execution.wait();
 				}
+
+				// TODO: Double 
+				// TODO: Break on first statement support
+				// TODO: Only resolve breakpoints on acceptable locations
+				// TODO: Expand template
+				// TODO: Create variable context for each document
+				// TODO: Update variables
+				// TODO: Allow dynamically modifying variables
+				// TODO: Execute expressions on the pipelines and affect scope
 			}
 		};
 

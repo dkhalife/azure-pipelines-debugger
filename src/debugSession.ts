@@ -76,7 +76,7 @@ export class DebugSession extends LoggingDebugSession {
 
 		// wait 1 second until configuration has finished (and configurationDoneRequest has been called)
 		await this._configurationDone.wait(1000);
-        await this.debugger.start(args.entry);
+        await this.debugger.start(args.pipeline);
 
         this.sendResponse(response);
 	}

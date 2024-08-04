@@ -11,8 +11,7 @@
   ],
   "activationEvents": [
     "onDebugResolve:azurepipelines",
-    "onDebugDynamicConfigurations:azurepipelines",
-    "onCommand:extension.azure-pipeline-templates-debugger.getEntry"
+    "onDebugDynamicConfigurations:azurepipelines"
   ],
   "extensionDependencies": [
     "ms-azure-devops.azure-pipelines"
@@ -34,17 +33,17 @@
         "configurationAttributes": {
           "launch": {
             "required": [
-              "entry"
+              "pipeline"
             ],
             "properties": {
-              "entry": {
+              "pipeline": {
                 "type": "string",
                 "description": "Absolute path to a text file.",
-                "default": "${workspaceFolder}/azure-pipelines.yml"
+                "default": "${workspaceFolder}/azure-pipeline.yml"
               },
               "parameters": {
                 "type": "string",
-                "description": "An optional YAML file containing assignments to parameters for the entry file.",
+                "description": "An optional YAML file containing assignments to parameter values for the pipeline.",
                 "default": ""
               }
             }
@@ -55,7 +54,7 @@
             "type": "azurepipelines",
             "request": "launch",
             "name": "Launch",
-            "entry": "${workspaceFolder}/azure-pipelines.yml"
+            "pipeline": "${workspaceFolder}/azure-pipeline.yml"
           }
         ],
         "configurationSnippets": [
@@ -66,7 +65,7 @@
               "type": "azurepipelines",
               "request": "launch",
               "name": "Debug pipeline",
-              "entry": "^\"\\${workspaceFolder}/azure-pipelines.yml\""
+              "pipeline": "^\"\\${workspaceFolder}/azure-pipeline.yml\""
             }
           }
         ]

@@ -12,12 +12,12 @@ class ConfigurationProvider implements vscode.DebugConfigurationProvider {
 				config.type = 'azurepipelines';
 				config.name = 'Launch';
 				config.request = 'launch';
-				config.entry = '${file}';
+				config.pipeline = '${file}';
 			}
 		}
 
-		if (!config.entry) {
-			return vscode.window.showInformationMessage("Cannot find an entry to debug").then(_ => {
+		if (!config.pipeline) {
+			return vscode.window.showInformationMessage("Cannot find a pipeline to debug").then(_ => {
 				return undefined;	// abort launch
 			});
 		}
