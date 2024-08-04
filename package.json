@@ -9,13 +9,59 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onDebugResolve:azurepipelines",
+    "onDebugDynamicConfigurations:azurepipelines",
+    "onCommand:extension.azure-pipeline-templates-debugger.getEntry"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
+    "debuggers": [
       {
-        "command": "azure-pipeline-templates-debugger.helloWorld",
-        "title": "Hello World"
+        "type": "azurepipelines",
+        "languages": [
+          "yaml"
+        ],
+        "label": "Launch",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "entry"
+            ],
+            "properties": {
+              "entry": {
+                "type": "string",
+                "description": "Absolute path to a text file.",
+                "default": "${workspaceFolder}/azure-pipelines.yml"
+              },
+              "parameters": {
+                "type": "string",
+                "description": "An optional YAML file containing assignments to parameters for the entry file.",
+                "default": ""
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "azurepipelines",
+            "request": "launch",
+            "name": "Launch",
+            "entry": "${workspaceFolder}/azure-pipelines.yml"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Launch",
+            "description": "A new configuration for analyzing a user selected azure pipeline file.",
+            "body": {
+              "type": "azurepipelines",
+              "request": "launch",
+              "name": "Debug pipeline",
+              "entry": "^\"\\${workspaceFolder}/azure-pipelines.yml\""
+            }
+          }
+        ]
       }
     ]
   },
@@ -28,14 +74,21 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.92.0",
     "@types/mocha": "^10.0.7",
-    "@types/node": "20.x",
+    "@types/node": "^22.1.0",
+    "@types/path-browserify": "^1.0.2",
+    "@types/vscode": "^1.92.0",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.11.0",
-    "eslint": "^8.57.0",
-    "typescript": "^5.4.5",
     "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.4.0"
+    "@vscode/test-electron": "^2.4.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@vscode/debugadapter": "^1.66.0",
+    "@vscode/debugprotocol": "^1.66.0",
+    "await-notify": "^1.0.1",
+    "path-browserify": "^1.0.1"
   }
 }
