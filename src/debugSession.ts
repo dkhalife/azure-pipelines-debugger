@@ -4,10 +4,7 @@ import {
 	Logger, logger,
 	LoggingDebugSession,
 	InitializedEvent,
-    Scope,
-    Thread,
-    Handles	
-	} from '@vscode/debugadapter';
+    Handles	} from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { FileAccessor } from './fileUtils';
 import { IAttachRequestArguments, ILaunchRequestArguments } from './debugProtocol';
@@ -60,7 +57,7 @@ export class DebugSession extends LoggingDebugSession {
 		response.body.supportsInstructionBreakpoints = false;
 		response.body.supportsReadMemoryRequest = false;
 		response.body.supportsWriteMemoryRequest = false;
-		response.body.supportSuspendDebuggee = true;
+		response.body.supportSuspendDebuggee = false;
 		response.body.supportTerminateDebuggee = false;
 		response.body.supportsFunctionBreakpoints = false;
 		response.body.supportsDelayedStackTraceLoading = true;
@@ -78,9 +75,6 @@ export class DebugSession extends LoggingDebugSession {
 
 		// notify the launchRequest that configuration has finished
 		this._configurationDone.notify();
-	}
-
-	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
 	}
 
 	protected async attachRequest(response: DebugProtocol.AttachResponse, args: IAttachRequestArguments) {
@@ -114,29 +108,14 @@ export class DebugSession extends LoggingDebugSession {
 	}
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
-
-		// runtime supports no threads so just return a default thread.
-		response.body = {
-			threads: [
-				new Thread(1, "thread 1"),
-			]
-		};
 		this.sendResponse(response);
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
-		response.body = response.body || {};
 		this.sendResponse(response);
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
-
-		response.body = {
-			scopes: [
-				new Scope("Locals", this._variableHandles.create('locals'), false),
-				new Scope("Globals", this._variableHandles.create('globals'), true)
-			]
-		};
 		this.sendResponse(response);
 	}
 
