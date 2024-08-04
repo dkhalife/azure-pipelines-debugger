@@ -14,18 +14,21 @@
     "onDebugDynamicConfigurations:azurepipelines",
     "onCommand:extension.azure-pipeline-templates-debugger.getEntry"
   ],
+  "extensionDependencies": [
+    "ms-azure-devops.azure-pipelines"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "breakpoints": [
       {
-        "language": "yaml"
+        "language": "azure-pipelines"
       }
     ],
     "debuggers": [
       {
         "type": "azurepipelines",
         "languages": [
-          "yaml"
+          "azure-pipelines"
         ],
         "label": "Launch",
         "configurationAttributes": {
