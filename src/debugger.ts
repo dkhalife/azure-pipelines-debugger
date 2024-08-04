@@ -5,7 +5,8 @@ import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
 import { asyncVisitor, visitAsync } from "yaml";
 import { Subject } from 'await-notify';
-import { Scope, Source, StackFrame, Thread } from "@vscode/debugadapter";
+import { Breakpoint, Scope, Source, StackFrame, Thread } from "@vscode/debugadapter";
+import { DebugProtocol } from "@vscode/debugprotocol";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -79,6 +80,19 @@ export class Debugger extends EventEmitter {
 	public resume() {
 		this.emit("continue");
 		this.execution.notify();
+	}
+
+	public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
+		const path = args.source.path as string;
+		const clientLines = args.lines || [];
+
+		// set and verify breakpoint locations
+		return clientLines.map(l => {
+			// verified = whether symbol for it was loaded or not
+			const bp = new Breakpoint(true, l) as DebugProtocol.Breakpoint;
+			bp.id = 10 * l;
+			return bp;
+		});
 	}
 
 	public stepOver() {

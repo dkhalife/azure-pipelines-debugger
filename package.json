@@ -16,6 +16,11 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "breakpoints": [
+      {
+        "language": "yaml"
+      }
+    ],
     "debuggers": [
       {
         "type": "azurepipelines",

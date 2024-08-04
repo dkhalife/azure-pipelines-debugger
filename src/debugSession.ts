@@ -3,7 +3,7 @@
 import {
 	Logger, logger,
 	LoggingDebugSession,
-	InitializedEvent	} from '@vscode/debugadapter';
+	InitializedEvent} from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { FileAccessor } from './fileUtils';
 import { IAttachRequestArguments, ILaunchRequestArguments } from './debugProtocol';
@@ -79,6 +79,13 @@ export class DebugSession extends LoggingDebugSession {
         await this.debugger.start(args.entry);
 
         this.sendResponse(response);
+	}
+
+	protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
+		response.body = {
+			breakpoints: this.debugger.setBreakpoints(args)
+		};
+		this.sendResponse(response);
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
