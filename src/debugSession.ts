@@ -9,12 +9,11 @@ import { FileAccessor } from './fileUtils';
 import { IAttachRequestArguments, ILaunchRequestArguments } from './debugProtocol';
 import { Subject } from 'await-notify';
 import { Debugger } from './debugger';
-import { EventManager } from './eventManager';
+import { registerEvents } from './eventManager';
 
 export class DebugSession extends LoggingDebugSession {
 	private _configurationDone = new Subject();
     private debugger: Debugger;
-	private eventManager: EventManager;
 
 	public constructor(fileAccessor: FileAccessor) {
 		super("azure-pipelines.txt");
@@ -23,7 +22,7 @@ export class DebugSession extends LoggingDebugSession {
 		this.setDebuggerColumnsStartAt1(true);
 
         this.debugger = new Debugger(fileAccessor);
-		this.eventManager = new EventManager(this, this.debugger);
+		registerEvents(this, this.debugger);
 	}
 
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
