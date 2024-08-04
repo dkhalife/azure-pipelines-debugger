@@ -16,7 +16,7 @@ export class DebugSession extends LoggingDebugSession {
     private debugger: Debugger;
 
 	public constructor(fileAccessor: FileAccessor) {
-		super("azure-pipelines.txt");
+		super("azure-pipelines-debugger.txt");
 
         this.setDebuggerLinesStartAt1(true);
 		this.setDebuggerColumnsStartAt1(true);
