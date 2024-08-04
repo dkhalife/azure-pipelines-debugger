@@ -71,10 +71,13 @@ export class Debugger extends EventEmitter {
 			}
 		};
 
-		visitAsync(doc, DocumentVisitor);
+		visitAsync(doc, DocumentVisitor).then(() => {
+			this.emit("stop");
+		});
 	}
 
 	public resume() {
+		this.emit("continue");
 		this.execution.notify();
 	}
 
