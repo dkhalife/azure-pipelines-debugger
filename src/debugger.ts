@@ -54,10 +54,9 @@ export class Debugger extends EventEmitter {
 		this.documentManager = new DocumentManager(fileAccessor);
 	}
 
-	public async start(file: string): Promise<void> {
+	private async newDocument(file: string) {
 		const doc = await this.documentManager.getDoc(file);
-
-		const DocumentVisitor: asyncVisitor = {
+		const visitor: asyncVisitor = {
 			Pair: async (symbol, value, path): Promise<symbol | void> => {
 				this.executionPointer = {
 					file,
@@ -70,19 +69,14 @@ export class Debugger extends EventEmitter {
 					this.emit("stopOnStep", Debugger.MainThreadId);
 					await this.execution.wait();
 				}
-
-				// TODO: Double 
-				// TODO: Break on first statement support
-				// TODO: Only resolve breakpoints on acceptable locations
-				// TODO: Expand template
-				// TODO: Create variable context for each document
-				// TODO: Update variables
-				// TODO: Allow dynamically modifying variables
-				// TODO: Execute expressions on the pipelines and affect scope
 			}
 		};
 
-		visitAsync(doc, DocumentVisitor).then(() => {
+		return visitAsync(doc, visitor);
+	}
+
+	public async start(file: string): Promise<void> {
+		this.newDocument(file).then(() => {
 			this.emit("stop");
 		});
 	}
