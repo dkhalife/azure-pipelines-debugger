@@ -3,23 +3,19 @@
 import {
 	Logger, logger,
 	LoggingDebugSession,
-	InitializedEvent,
-    Handles	} from '@vscode/debugadapter';
+	InitializedEvent	} from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { FileAccessor } from './fileUtils';
 import { IAttachRequestArguments, ILaunchRequestArguments } from './debugProtocol';
 import { Subject } from 'await-notify';
 import { Debugger } from './debugger';
+import { EventManager } from './eventManager';
 
 export class DebugSession extends LoggingDebugSession {
-	private _variableHandles = new Handles<'locals' | 'globals'>();
 	private _configurationDone = new Subject();
     private debugger: Debugger;
+	private eventManager: EventManager;
 
-	/**
-	 * Creates a new debug adapter that is used for one debug session.
-	 * We configure the default implementation of a debug adapter here.
-	 */
 	public constructor(fileAccessor: FileAccessor) {
 		super("azure-pipelines.txt");
 
@@ -27,17 +23,12 @@ export class DebugSession extends LoggingDebugSession {
 		this.setDebuggerColumnsStartAt1(true);
 
         this.debugger = new Debugger(fileAccessor);
+		this.eventManager = new EventManager(this, this.debugger);
 	}
 
-	/**
-	 * The 'initialize' request is the first request called by the frontend
-	 * to interrogate the features the debug adapter provides.
-	 */
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
-		// build and return the capabilities of this debug adapter:
 		response.body = response.body || {};
 
-		// the adapter implements the configurationDone request.
 		response.body.supportsConfigurationDoneRequest = true;
 		response.body.supportsEvaluateForHovers = false;
 		response.body.supportsStepBack = false;
@@ -92,34 +83,52 @@ export class DebugSession extends LoggingDebugSession {
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
+		this.debugger.resume();
 		this.sendResponse(response);
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
+		this.debugger.stepOver();
 		this.sendResponse(response);
 	}
 
 	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
+		this.debugger.stepInto();
 		this.sendResponse(response);
 	}
 
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
+		this.debugger.stepOut();
 		this.sendResponse(response);
 	}
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+		response.body = response.body || {};
+		response.body.threads = this.debugger.getThreads();
+
 		this.sendResponse(response);
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+		const frames = this.debugger.getStackTrace();
+
+		response.body = response.body || {};
+		response.body.stackFrames = frames;
+		response.body.totalFrames = frames.length;
+
 		this.sendResponse(response);
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+		response.body = response.body || {};
+		response.body.scopes = this.debugger.getScopes();
+
 		this.sendResponse(response);
 	}
 
 	protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {
+		response.body = this.debugger.getExceptionInfo();
+
 		this.sendResponse(response);
 	}
 }
