@@ -4,12 +4,9 @@ import {
 	Logger, logger,
 	LoggingDebugSession,
 	InitializedEvent,
-    StoppedEvent,
     Scope,
     Thread,
-    Handles,
-	Source
-	
+    Handles	
 	} from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { FileAccessor } from './fileUtils';
@@ -21,7 +18,6 @@ export class DebugSession extends LoggingDebugSession {
 	private _variableHandles = new Handles<'locals' | 'globals'>();
 	private _configurationDone = new Subject();
     private debugger: Debugger;
-	private entry: string = "";
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -34,11 +30,6 @@ export class DebugSession extends LoggingDebugSession {
 		this.setDebuggerColumnsStartAt1(true);
 
         this.debugger = new Debugger(fileAccessor);
-		this.debugger.on('stopOnBreakpoint', () => {
-			// this.sendEvent(new StoppedEvent('breakpoint', 1));
-			this.sendEvent(new StoppedEvent(`exception`, 1, "Something went terribly wrong"));
-			//this.sendEvent(new StoppedEvent(`exception(Foo)`, 1, "Some warning"));
-		});
 	}
 
 	/**
@@ -101,8 +92,6 @@ export class DebugSession extends LoggingDebugSession {
 
 		// wait 1 second until configuration has finished (and configurationDoneRequest has been called)
 		await this._configurationDone.wait(1000);
-
-		this.entry = args.entry;
         await this.debugger.start(args.entry);
 
         this.sendResponse(response);
@@ -137,18 +126,6 @@ export class DebugSession extends LoggingDebugSession {
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 		response.body = response.body || {};
-
-		if (args.startFrame === 0) {
-			response.body.stackFrames = [{
-                id: 1,
-                name: "frame name",
-                source: new Source("frame", this.entry),
-                line: 4,
-                column: 5,
-            }];
-			response.body.totalFrames = 1;
-		}
-
 		this.sendResponse(response);
 	}
 
@@ -164,16 +141,6 @@ export class DebugSession extends LoggingDebugSession {
 	}
 
 	protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {
-		response.body = {
-			exceptionId: 'Exception ID',
-			description: 'This is a descriptive description of the exception.',
-			breakMode: 'always',
-			details: {
-				message: 'Message contained in the exception.',
-				typeName: 'Short type name of the exception object',
-				stackTrace: 'stack frame 1\nstack frame 2',
-			}
-		};
 		this.sendResponse(response);
 	}
 }
