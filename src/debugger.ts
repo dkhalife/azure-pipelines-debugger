@@ -3,7 +3,7 @@
 import { FileAccessor } from "./fileUtils";
 import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
-import { asyncVisitor, visitAsync } from "yaml";
+import { asyncVisitor, Node, visitAsync } from "yaml";
 import { Subject } from 'await-notify';
 import { Breakpoint, Scope, Source, StackFrame, Thread } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
@@ -58,10 +58,6 @@ export class Debugger extends EventEmitter {
 		super();
 
 		this.documentManager = new DocumentManager(fileAccessor);
-		this.contexts.push({
-			execution: new Subject(),
-			executionPointer: null
-		});
 	}
 
 	private currentContext(): ExecutionContext {
@@ -85,12 +81,27 @@ export class Debugger extends EventEmitter {
 				};
 
 				const k = value.key?.toString();
-				if (k?.startsWith("abc")) {
+				if (k?.startsWith("template")) {
+					const parentWait = this.currentContext().execution.wait();
+					this.newDocument((value.value as Node).toString()).then(() => {
+						this.contexts.pop();
+						this.currentContext().execution.notify();
+					});
+
+					await parentWait;
+				}
+
+				if (k?.startsWith("wait")) {
 					this.emit("stopOnStep", Debugger.MainThreadId);
-					await ctxt.execution.wait();
+					await this.currentContext().execution.wait();
 				}
 			}
 		};
+
+		this.contexts.push({
+			execution: new Subject(),
+			executionPointer: null
+		});
 
 		return visitAsync(doc, visitor);
 	}
