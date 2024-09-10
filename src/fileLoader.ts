@@ -1,11 +1,16 @@
-import { Document, parseDocument } from "yaml";
+import { Document, LineCounter, parseDocument } from "yaml";
 import { FileAccessor } from "./fileUtils";
+
+export type DecoratedDocument = {
+	document: Document
+	lineCounter: LineCounter
+};
 
 export class FileLoader {
     constructor(private fileAccessor: FileAccessor) {
 	}
 
-	public async load(file: string): Promise<Document> {
+	public async load(file: string): Promise<DecoratedDocument> {
 		file = this.normalizePathAndCasing(file);
 		return this.initializeContents(await this.fileAccessor.readFile(file));
 	}
@@ -19,6 +24,12 @@ export class FileLoader {
 	}
 
 	private initializeContents(memory: Uint8Array) {
-		return parseDocument(new TextDecoder().decode(memory));
+		const lineCounter = new LineCounter();
+		return {
+			document: parseDocument(new TextDecoder().decode(memory), {
+				lineCounter
+			}),
+			lineCounter
+		};
 	}
 }

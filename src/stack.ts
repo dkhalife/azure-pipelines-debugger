@@ -9,8 +9,12 @@ export class Stack<T> {
         return this.items.pop();
     }
 
+    item(i: number): T | undefined {
+        return this.items[i];
+    }
+
     top(): T | undefined {
-        return this.items[this.items.length - 1];
+        return this.item(this.items.length - 1);
     }
 
     isEmpty(): boolean {

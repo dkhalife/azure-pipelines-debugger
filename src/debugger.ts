@@ -5,9 +5,10 @@ import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
 import { asyncVisitor, isCollection, isMap, isPair, isScalar, Scalar, visitAsync, YAMLMap } from "yaml";
 import { Subject } from 'await-notify';
-import { Breakpoint, Scope, StackFrame, Thread, Variable } from "@vscode/debugadapter";
+import { Breakpoint, Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { Stack } from "./stack";
+import { basename } from "path";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -39,8 +40,8 @@ export type ExceptionInfo = {
 
 export type ExecutionPointer = {
 	file: string;
-	symbol: number | "key" | "value" | string | null;
-	// path: readonly (Node | Document<Node, true> | Pair<unknown, unknown>)[];
+	symbol: string;
+	position: { line: number, col: number }
 };
 
 type ExecutionContext = {
@@ -71,20 +72,21 @@ export class Debugger extends EventEmitter {
 
 	private async newDocument(file: string, parameters: Object) {
 		const doc = await this.documentManager.getDoc(file);
+		const lineCounter = doc.lineCounter;
 		const visitor: asyncVisitor = {
 			Pair: async (symbol, value, path): Promise<void> => {
 				const ctxt = this.currentContext();
+				const position = lineCounter.linePos((value.key as any).range[0]);
 				ctxt.executionPointer = {
 					file,
-					symbol,
-					// path
+					symbol: (value as any).key.value,
+					position
 				};
 
 				const k = value.key?.toString();
-				if (k?.startsWith("wait")) {
-					this.emit("stopOnStep", Debugger.MainThreadId);
-					await this.currentContext().execution.wait();
-				}
+				// TODO: Logic to check for breakpoints
+				this.emit("stopOnStep", Debugger.MainThreadId);
+				await this.currentContext().execution.wait();
 			},
 
 			Node: async (key, node, path): Promise<void> => {
@@ -131,7 +133,7 @@ export class Debugger extends EventEmitter {
 			parameters,
 		});
 
-		return visitAsync(doc, visitor);
+		return visitAsync(doc.document, visitor);
 	}
 
 	public async start(file: string): Promise<void> {
@@ -199,16 +201,15 @@ export class Debugger extends EventEmitter {
 		];
 	}
 
-	private line = 0;
 	public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {
 		if (startFrame === 0) {
 			const ret: StackFrame[] = [];
-			const callStack: Stack<ExecutionContext> = Object.assign(Object.create(Object.getPrototypeOf(this.contexts)), this.contexts);
-			let i = 0;
-			/*while (!callStack.isEmpty()) {
-				const exectutionPointer = callStack.pop()?.executionPointer;
-				ret.push(new StackFrame(i, "frame name", new Source("frame", exectutionPointer?.file), 1));
-			}*/
+			const contexts = this.contexts;
+			for (let i=contexts.size()-1; i>=0; --i) {
+				const exectutionPointer = contexts.item(i)?.executionPointer;
+				const pos = exectutionPointer?.position;
+				ret.push(new StackFrame(i, exectutionPointer?.symbol || "unknown", new Source(basename(exectutionPointer?.file || "unknown"), exectutionPointer?.file), pos?.line, pos?.col));
+			}
 			return ret;
 		}
 
