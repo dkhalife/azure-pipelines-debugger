@@ -108,6 +108,13 @@ export class DebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
+	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): void {
+		response.body = response.body || {};
+		response.body.variables = this.debugger.getVariables(args.variablesReference, args.start || 0, args.count || 0);
+
+		this.sendResponse(response);
+	}
+
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 		response.body = response.body || {};
 		response.body.threads = this.debugger.getThreads();

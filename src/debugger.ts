@@ -3,12 +3,11 @@
 import { FileAccessor } from "./fileUtils";
 import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
-import { asyncVisitor, Node, visitAsync } from "yaml";
+import { asyncVisitor, isCollection, isMap, isPair, isScalar, Scalar, visitAsync, YAMLMap } from "yaml";
 import { Subject } from 'await-notify';
-import { Breakpoint, Scope, Source, StackFrame, Thread } from "@vscode/debugadapter";
+import { Breakpoint, Scope, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { Stack } from "./stack";
-import assert from "assert";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -47,6 +46,7 @@ export type ExecutionPointer = {
 type ExecutionContext = {
 	execution: Subject;
 	executionPointer: ExecutionPointer | null;
+	parameters: Object;
 };
 
 export class Debugger extends EventEmitter {
@@ -69,10 +69,10 @@ export class Debugger extends EventEmitter {
 		return ctxt;
 	}
 
-	private async newDocument(file: string) {
+	private async newDocument(file: string, parameters: Object) {
 		const doc = await this.documentManager.getDoc(file);
 		const visitor: asyncVisitor = {
-			Pair: async (symbol, value, path): Promise<symbol | void> => {
+			Pair: async (symbol, value, path): Promise<void> => {
 				const ctxt = this.currentContext();
 				ctxt.executionPointer = {
 					file,
@@ -81,33 +81,61 @@ export class Debugger extends EventEmitter {
 				};
 
 				const k = value.key?.toString();
-				if (k?.startsWith("template")) {
-					const parentWait = this.currentContext().execution.wait();
-					this.newDocument((value.value as Node).toString()).then(() => {
-						this.contexts.pop();
-						this.currentContext().execution.notify();
-					});
-
-					await parentWait;
-				}
-
 				if (k?.startsWith("wait")) {
 					this.emit("stopOnStep", Debugger.MainThreadId);
 					await this.currentContext().execution.wait();
 				}
-			}
+			},
+
+			Node: async (key, node, path): Promise<void> => {
+				if (isCollection(node)) {
+					const firstItem = node.items[0];
+					if (isPair(firstItem)) {
+						// eslint-disable-next-line eqeqeq
+						if (firstItem.key == "template") {
+							const params = {};
+							for (let i=1; i<node.items.length; ++i) {
+								const item = node.items[i];
+								// eslint-disable-next-line eqeqeq
+								if (isPair(item) && item.key == "parameters") {
+									if (isMap(item.value)) {
+										for (const p of item.value.items) {
+											params[(p.key as Scalar).toString()] = p.value;
+										}
+									}
+
+									break;
+								}
+							}
+
+							if (!isScalar(firstItem.value)) {
+								return;
+							}
+
+							const parentWait = this.currentContext().execution.wait();
+							this.newDocument(firstItem.value.value as string, params).then(() => {
+								this.contexts.pop();
+								this.currentContext().execution.notify();
+							});
+
+							await parentWait;
+						}
+					}
+				}
+			},
 		};
 
 		this.contexts.push({
 			execution: new Subject(),
-			executionPointer: null
+			executionPointer: null,
+			parameters,
 		});
 
 		return visitAsync(doc, visitor);
 	}
 
 	public async start(file: string): Promise<void> {
-		this.newDocument(file).then(() => {
+		this.newDocument(file, new YAMLMap()).then(() => {
 			this.emit("stop");
 		});
 	}
@@ -139,6 +167,29 @@ export class Debugger extends EventEmitter {
 	public stepOut() {
 	}
 
+	public getVariables(variablesReference: number, start: number, count: number): Variable[] {
+		if (this.contexts.isEmpty()) {
+			return [];
+		}
+
+		const executionContext = this.contexts.top();
+		if (!executionContext) {
+			return [];
+		}
+
+		if (variablesReference !== 1) {
+			return [];
+		}
+
+		const ret: Variable[] = [];
+		for (const key of Object.keys(executionContext.parameters)) {
+			// TODO: Design a scalable way to reference objects with variablesReference?
+			ret.push(new Variable(key, executionContext.parameters[key].value.toString()));
+			/* add source, line, col, endline, end col */
+		}
+		return ret;
+	}
+
 	public getThreads(): Thread[] {
 		return [
 			{
@@ -151,20 +202,25 @@ export class Debugger extends EventEmitter {
 	private line = 0;
 	public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {
 		if (startFrame === 0) {
-			return [{
-                id: 1,
-                name: "frame name",
-                source: new Source("frame", this.currentContext().executionPointer?.file),
-                line: ++this.line,
-                column: 1,
-            }];
+			const ret: StackFrame[] = [];
+			const callStack: Stack<ExecutionContext> = Object.assign(Object.create(Object.getPrototypeOf(this.contexts)), this.contexts);
+			let i = 0;
+			/*while (!callStack.isEmpty()) {
+				const exectutionPointer = callStack.pop()?.executionPointer;
+				ret.push(new StackFrame(i, "frame name", new Source("frame", exectutionPointer?.file), 1));
+			}*/
+			return ret;
 		}
 
 		return [];
 	}
 
 	public getScopes(): Scope[] {
-		return [];
+		return [{
+			expensive: false,
+			name: "Parameters",
+			variablesReference: 1
+		}];
 	}
 
 	public getExceptionInfo(): ExceptionInfo {
