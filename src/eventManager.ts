@@ -13,4 +13,8 @@ export const registerEvents = (session: LoggingDebugSession, runtime: Debugger) 
     runtime.on("stopOnStep", (threadId: number) => {
         session.sendEvent(new StoppedEvent('step', threadId));
     });
+
+    runtime.on("stopOnError", (threadId: number, error: string) => {
+        session.sendEvent(new StoppedEvent('exception', threadId, error));
+    });
 };

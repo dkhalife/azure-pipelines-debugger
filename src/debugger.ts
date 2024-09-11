@@ -133,6 +133,25 @@ export class Debugger extends EventEmitter {
 			parameters,
 		});
 
+		const errors = doc.document.errors;
+
+		if (errors.length > 0) {
+			for (const error of errors) {
+				const ctxt = this.currentContext();
+				const pos = lineCounter.linePos(error.pos[0]);
+				ctxt.executionPointer = {
+					file,
+					symbol: error.name,
+					position: { line: pos.line, col: pos.col }
+				};
+
+				this.emit("stopOnError", Debugger.MainThreadId, error.message);
+				await this.currentContext().execution.wait();
+			}
+
+			return;
+		}
+
 		return visitAsync(doc.document, visitor);
 	}
 
@@ -205,6 +224,7 @@ export class Debugger extends EventEmitter {
 		if (startFrame === 0) {
 			const ret: StackFrame[] = [];
 			const contexts = this.contexts;
+			// TODO: Unroll a range for each execution context instead of just the top value
 			for (let i=contexts.size()-1; i>=0; --i) {
 				const exectutionPointer = contexts.item(i)?.executionPointer;
 				const pos = exectutionPointer?.position;
