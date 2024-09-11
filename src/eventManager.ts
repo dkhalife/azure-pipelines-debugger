@@ -2,6 +2,10 @@ import { ContinuedEvent, LoggingDebugSession, StoppedEvent, TerminatedEvent } fr
 import { Debugger } from "./debugger";
 
 export const registerEvents = (session: LoggingDebugSession, runtime: Debugger) => {
+    runtime.on('stopOnEntry', (threadId: number) => {
+        session.sendEvent(new StoppedEvent('entry', threadId));
+    });
+
     runtime.on("stop", () => {
         session.sendEvent(new TerminatedEvent());
     });

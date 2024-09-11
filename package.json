@@ -47,6 +47,11 @@
                 "type": "string",
                 "description": "An optional YAML file containing assignments to parameter values for the pipeline.",
                 "default": ""
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch.",
+                "default": false
               }
             }
           }
@@ -62,12 +67,13 @@
         "configurationSnippets": [
           {
             "label": "Azure Pipelines: Debug a pipeline",
-            "description": "A new configuration for analyzing a user selected azure pipeline file.",
+            "description": "A new configuration for debugging a pipeline.",
             "body": {
               "type": "azurepipelines",
               "request": "launch",
               "name": "Debug pipeline",
-              "pipeline": "^\"\\${workspaceFolder}/azure-pipeline.yml\""
+              "pipeline": "^\"\\${workspaceFolder}/azure-pipeline.yml\"",
+              "stopOnEntry": false
             }
           }
         ]

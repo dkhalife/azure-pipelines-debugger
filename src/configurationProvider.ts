@@ -13,6 +13,7 @@ class ConfigurationProvider implements vscode.DebugConfigurationProvider {
 				config.name = 'Azure Pipelines: Debug current file';
 				config.request = 'launch';
 				config.pipeline = '${file}';
+				config.stopOnEntry = false;
 			}
 		}
 
@@ -39,7 +40,8 @@ export function registerConfigurationProviders(context: vscode.ExtensionContext)
 					name: "Azure Pipelines: Debug current file",
 					request: "launch",
 					type: "azurepipelines",
-					pipeline: "${file}"
+					pipeline: "${file}",
+					stopOnEntry: false
 				},
 			];
 		}

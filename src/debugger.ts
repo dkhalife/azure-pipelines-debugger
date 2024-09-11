@@ -70,9 +70,10 @@ export class Debugger extends EventEmitter {
 		return ctxt;
 	}
 
-	private async newDocument(file: string, parameters: Object) {
+	private async newDocument(file: string, parameters: Object, stopOnEntry?: boolean) {
 		const doc = await this.documentManager.getDoc(file);
 		const lineCounter = doc.lineCounter;
+		const stopOnNextStatement = false;
 		const visitor: asyncVisitor = {
 			Pair: async (symbol, value, path): Promise<void> => {
 				const ctxt = this.currentContext();
@@ -84,9 +85,11 @@ export class Debugger extends EventEmitter {
 				};
 
 				const k = value.key?.toString();
-				// TODO: Logic to check for breakpoints
-				this.emit("stopOnStep", Debugger.MainThreadId);
-				await this.currentContext().execution.wait();
+				
+				if (stopOnNextStatement) {
+					this.emit("stopOnStep", Debugger.MainThreadId);
+					await this.currentContext().execution.wait();
+				}
 			},
 
 			Node: async (key, node, path): Promise<void> => {
@@ -152,11 +155,23 @@ export class Debugger extends EventEmitter {
 			return;
 		}
 
+		if (stopOnEntry) {
+			const ctxt = this.currentContext();
+			ctxt.executionPointer = {
+				file,
+				symbol: "entry",
+				position: { line: 1, col: 1 }
+			};
+
+			this.emit("stopOnEntry", Debugger.MainThreadId);
+			await this.currentContext().execution.wait();
+		}
+
 		return visitAsync(doc.document, visitor);
 	}
 
-	public async start(file: string): Promise<void> {
-		this.newDocument(file, new YAMLMap()).then(() => {
+	public async start(file: string, stopOnEntry?: boolean): Promise<void> {
+		this.newDocument(file, new YAMLMap(), stopOnEntry).then(() => {
 			this.emit("stop");
 		});
 	}
