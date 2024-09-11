@@ -10,7 +10,9 @@
     "Other"
   ],
   "activationEvents": [
+    "onDebugResolve:yaml",
     "onDebugResolve:azurepipelines",
+    "onDebugDynamicConfigurations:yaml",
     "onDebugDynamicConfigurations:azurepipelines"
   ],
   "extensionDependencies": [
@@ -53,13 +55,13 @@
           {
             "type": "azurepipelines",
             "request": "launch",
-            "name": "Launch",
-            "pipeline": "${workspaceFolder}/azure-pipeline.yml"
+            "name": "Azure Pipelines: Debug current file",
+            "pipeline": "${file}"
           }
         ],
         "configurationSnippets": [
           {
-            "label": "Launch",
+            "label": "Azure Pipelines: Debug a pipeline",
             "description": "A new configuration for analyzing a user selected azure pipeline file.",
             "body": {
               "type": "azurepipelines",

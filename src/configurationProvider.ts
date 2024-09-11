@@ -10,7 +10,7 @@ class ConfigurationProvider implements vscode.DebugConfigurationProvider {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === 'azure-pipelines') {
 				config.type = 'azurepipelines';
-				config.name = 'Launch';
+				config.name = 'Azure Pipelines: Debug current file';
 				config.request = 'launch';
 				config.pipeline = '${file}';
 			}
@@ -36,23 +36,11 @@ export function registerConfigurationProviders(context: vscode.ExtensionContext)
 		provideDebugConfigurations(folder: WorkspaceFolder | undefined): ProviderResult<DebugConfiguration[]> {
 			return [
 				{
-					name: "Dynamic Launch",
+					name: "Azure Pipelines: Debug current file",
 					request: "launch",
 					type: "azurepipelines",
-					program: "${file}"
+					pipeline: "${file}"
 				},
-				{
-					name: "Another Dynamic Launch",
-					request: "launch",
-					type: "azurepipelines",
-					program: "${file}"
-				},
-				{
-					name: "Mock Launch",
-					request: "launch",
-					type: "azurepipelines",
-					program: "${file}"
-				}
 			];
 		}
 	}, vscode.DebugConfigurationProviderTriggerKind.Dynamic));
