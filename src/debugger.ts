@@ -3,7 +3,7 @@
 import { FileAccessor } from "./fileUtils";
 import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
-import { asyncVisitor, isCollection, isMap, isPair, isScalar, Scalar, visitAsync, YAMLMap } from "yaml";
+import { asyncVisitor, isMap, isPair, isScalar, Pair, Scalar, visit, visitAsync, YAMLMap } from "yaml";
 import { Subject } from 'await-notify';
 import { Breakpoint, Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
@@ -50,10 +50,14 @@ type ExecutionContext = {
 	parameters: Object;
 };
 
+type VisitorControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
+
 export class Debugger extends EventEmitter {
 	private documentManager: DocumentManager;
 	private static readonly MainThreadId: number = 1;
 	private contexts: Stack<ExecutionContext> = new Stack();
+	private traversalControl: VisitorControl = 'NextBreakPoint';
+	private stopOnNextNode: boolean = false;
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
@@ -73,9 +77,8 @@ export class Debugger extends EventEmitter {
 	private async newDocument(file: string, parameters: Object, stopOnEntry?: boolean) {
 		const doc = await this.documentManager.getDoc(file);
 		const lineCounter = doc.lineCounter;
-		const stopOnNextStatement = false;
 		const visitor: asyncVisitor = {
-			Pair: async (symbol, value, path): Promise<void> => {
+			Pair: async (symbol, value, path): Promise<void | symbol> => {
 				const ctxt = this.currentContext();
 				const position = lineCounter.linePos((value.key as any).range[0]);
 				ctxt.executionPointer = {
@@ -84,49 +87,49 @@ export class Debugger extends EventEmitter {
 					position
 				};
 
-				const k = value.key?.toString();
+				const node = value.value;
+				if (isMap(node)) { // Adjust so we can catch the case of a template inserted into a list
+					const firstProp = node.items[0] as Pair<Scalar, Scalar>;
+					const secondProp = node.items[1] as Pair<Scalar, Map<Scalar, unknown>>;
+					if (isPair(firstProp) && isPair(secondProp)) {
+						if (isScalar(firstProp.key) && firstProp.key.value === "template") {
+							if (isScalar(secondProp.key) && secondProp.key.value === "parameters") {
+								const params = isMap(secondProp.value) ? secondProp.value.toJSON() : {};
+
+								/*const parentWait = this.currentContext().execution.wait();
+								this.newDocument(firstProp.value?.value as string, params).then(() => {
+									this.contexts.pop();
+									this.currentContext().execution.notify();
+								});
+
+								await parentWait;*/
+
+								return visit.SKIP;
+							}
+						}
+					}
+				}
 				
-				if (stopOnNextStatement) {
-					this.emit("stopOnStep", Debugger.MainThreadId);
+				if (this.stopOnNextNode) {
+					if (position.line === 1 && stopOnEntry) {
+						this.emit("stopOnEntry", Debugger.MainThreadId);
+					} else {
+						this.emit("stopOnStep", Debugger.MainThreadId);
+					}
+					this.stopOnNextNode = false;
 					await this.currentContext().execution.wait();
+				}
+
+				if (this.traversalControl === 'StepInto') {
+					return undefined; // explicit instead of early return to make it clear
+				} else if (this.traversalControl === 'StepOver') {
+					// TODO: How to deal with breakpoint in child node
+					return visit.SKIP; // Skips children
 				}
 			},
 
 			Node: async (key, node, path): Promise<void> => {
-				if (isCollection(node)) {
-					const firstItem = node.items[0];
-					if (isPair(firstItem)) {
-						// eslint-disable-next-line eqeqeq
-						if (firstItem.key == "template") {
-							const params = {};
-							for (let i=1; i<node.items.length; ++i) {
-								const item = node.items[i];
-								// eslint-disable-next-line eqeqeq
-								if (isPair(item) && item.key == "parameters") {
-									if (isMap(item.value)) {
-										for (const p of item.value.items) {
-											params[(p.key as Scalar).toString()] = p.value;
-										}
-									}
 
-									break;
-								}
-							}
-
-							if (!isScalar(firstItem.value)) {
-								return;
-							}
-
-							const parentWait = this.currentContext().execution.wait();
-							this.newDocument(firstItem.value.value as string, params).then(() => {
-								this.contexts.pop();
-								this.currentContext().execution.notify();
-							});
-
-							await parentWait;
-						}
-					}
-				}
 			},
 		};
 
@@ -156,15 +159,7 @@ export class Debugger extends EventEmitter {
 		}
 
 		if (stopOnEntry) {
-			const ctxt = this.currentContext();
-			ctxt.executionPointer = {
-				file,
-				symbol: "entry",
-				position: { line: 1, col: 1 }
-			};
-
-			this.emit("stopOnEntry", Debugger.MainThreadId);
-			await this.currentContext().execution.wait();
+			this.stopOnNextNode = true;
 		}
 
 		return visitAsync(doc.document, visitor);
@@ -177,8 +172,9 @@ export class Debugger extends EventEmitter {
 	}
 
 	public resume() {
-		this.currentContext().execution.notify();
+		this.traversalControl = 'NextBreakPoint';
 		this.emit("continue", Debugger.MainThreadId);
+		this.currentContext().execution.notify();
 	}
 
 	public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
@@ -195,9 +191,17 @@ export class Debugger extends EventEmitter {
 	}
 
 	public stepOver() {
+		this.traversalControl = 'StepOver';
+		this.stopOnNextNode = true;
+		this.emit("continue", Debugger.MainThreadId);
+		this.currentContext().execution.notify();
 	}
 
 	public stepInto() {
+		this.traversalControl = 'StepInto';
+		this.stopOnNextNode = true;
+		this.emit("continue", Debugger.MainThreadId);
+		this.currentContext().execution.notify();
 	}
 
 	public stepOut() {
