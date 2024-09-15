@@ -21,4 +21,8 @@ export const registerEvents = (session: LoggingDebugSession, runtime: Debugger) 
     runtime.on("stopOnError", (threadId: number, error: string) => {
         session.sendEvent(new StoppedEvent('exception', threadId, error));
     });
+
+    runtime.on("stopOnBreakpoint", (threadId: number) => {
+        session.sendEvent(new StoppedEvent('breakpoint', threadId));
+    });
 };

@@ -58,6 +58,7 @@ export class Debugger extends EventEmitter {
 	private contexts: Stack<ExecutionContext> = new Stack();
 	private traversalControl: VisitorControl = 'NextBreakPoint';
 	private stopOnNextNode: boolean = false;
+	private breakpoints: Set<number> = new Set<number>();
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
@@ -120,6 +121,9 @@ export class Debugger extends EventEmitter {
 						this.emit("stopOnStep", Debugger.MainThreadId);
 					}
 					this.stopOnNextNode = false;
+					await this.currentContext().execution.wait();
+				} else if (this.breakpoints.has(position.line)) {
+					this.emit("stopOnBreakpoint", Debugger.MainThreadId);
 					await this.currentContext().execution.wait();
 				}
 
@@ -185,14 +189,23 @@ export class Debugger extends EventEmitter {
 		const clientLines = args.lines || [];
 
 		const doc = await this.documentManager.getDoc(path);
+		const breakpointLines = new Set<number>();
 
 		// set and verify breakpoint locations
-		return clientLines.map(line => {
+		const validatedBreakpoints = clientLines.map(line => {
 			const isValid = doc.reachableLines.has(line);
 			const source = new Source(basename(path), path);
 			const bp = new Breakpoint(isValid, line, 1, source);
+
+			if (isValid && !breakpointLines.has(line)) {
+				breakpointLines.add(line);
+			}
+
 			return bp;
 		});
+
+		this.breakpoints = breakpointLines;
+		return validatedBreakpoints;
 	}
 
 	public stepOver() {
