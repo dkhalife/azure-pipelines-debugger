@@ -3,7 +3,7 @@
 import { FileAccessor } from "./fileUtils";
 import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
-import { asyncVisitor, isMap, isPair, isScalar, Pair, Scalar, visit, visitAsync, YAMLMap } from "yaml";
+import { asyncVisitor, isMap, isScalar, Node, Pair, visit, visitAsync, YAMLMap } from "yaml";
 import { Subject } from 'await-notify';
 import { Breakpoint, Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
@@ -78,7 +78,7 @@ export class Debugger extends EventEmitter {
 		const doc = await this.documentManager.getDoc(file);
 		const lineCounter = doc.lineCounter;
 		const visitor: asyncVisitor = {
-			Pair: async (symbol, value, path): Promise<void | symbol> => {
+			Pair: async (symbol, value: Pair, path): Promise<void | symbol> => {
 				const ctxt = this.currentContext();
 				const position = lineCounter.linePos((value.key as any).range[0]);
 				ctxt.executionPointer = {
@@ -87,29 +87,32 @@ export class Debugger extends EventEmitter {
 					position
 				};
 
-				const node = value.value;
-				if (isMap(node)) { // Adjust so we can catch the case of a template inserted into a list
-					const firstProp = node.items[0] as Pair<Scalar, Scalar>;
-					const secondProp = node.items[1] as Pair<Scalar, Map<Scalar, unknown>>;
-					if (isPair(firstProp) && isPair(secondProp)) {
-						if (isScalar(firstProp.key) && firstProp.key.value === "template") {
-							if (isScalar(secondProp.key) && secondProp.key.value === "parameters") {
-								const params = isMap(secondProp.value) ? secondProp.value.toJSON() : {};
+				// Encountered a pair that needs to be expanded
+				if (isScalar(value.key) && value.key.value === "template" && isScalar(value.value)) {
+					const docPath = value.value;
 
-								/*const parentWait = this.currentContext().execution.wait();
-								this.newDocument(firstProp.value?.value as string, params).then(() => {
-									this.contexts.pop();
-									this.currentContext().execution.notify();
-								});
-
-								await parentWait;*/
-
-								return visit.SKIP;
+					// Attempt to find any parameters for that template
+					const parentNode = path[path.length-1] as Node;
+					let params = {};
+					if (isMap(parentNode)) {
+						for (const kvp of parentNode.items) {
+							if (isScalar(kvp.key) && kvp.key.value === "parameters" && isMap(kvp.value)) {
+								params = kvp.value.toJSON();
 							}
 						}
 					}
+
+					/*const parentWait = this.currentContext().execution.wait();
+					this.newDocument(docPath, params).then(() => {
+						this.contexts.pop();
+						this.currentContext().execution.notify();
+					});
+
+					await parentWait;*/
+
+					return visit.SKIP;
 				}
-				
+
 				if (this.stopOnNextNode) {
 					if (position.line === 1 && stopOnEntry) {
 						this.emit("stopOnEntry", Debugger.MainThreadId);
