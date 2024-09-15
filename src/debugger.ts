@@ -50,6 +50,7 @@ type ExecutionContext = {
 	execution: Subject;
 	executionPointer: ExecutionPointer | null;
 	parameters: Object;
+	variables: Object;
 };
 
 type VisitorControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
@@ -96,6 +97,10 @@ export class Debugger extends EventEmitter {
 					symbol: (value as any).key.value,
 					position
 				};
+
+				if (isScalar(value.key) && value.key.value === "variables" && isMap(value.value)) {
+					ctxt.variables = value.value.toJSON();
+				}
 
 				// Encountered a pair that needs to be expanded
 				if (isScalar(value.key) && value.key.value === "template" && isScalar(value.value)) {
@@ -155,10 +160,12 @@ export class Debugger extends EventEmitter {
 			},
 		};
 
+		const variables = this.contexts.isEmpty() ? {} : this.currentContext().variables;
 		this.contexts.push({
 			execution: new Subject(),
 			executionPointer: null,
 			parameters,
+			variables
 		});
 
 		const errors = doc.document.errors;
@@ -236,16 +243,22 @@ export class Debugger extends EventEmitter {
 			return [];
 		}
 
-		if (variablesReference !== 1) {
-			return [];
+		// TODO: Design a scalable way to reference objects with variablesReference?
+		const ret: Variable[] = [];
+		let scope: Object = {};
+		if (variablesReference === 1) {
+			scope = executionContext.parameters;
+		} else if (variablesReference === 2) {
+			scope = executionContext.variables;
 		}
 
-		const ret: Variable[] = [];
-		for (const key in executionContext.parameters) {
-			// TODO: Design a scalable way to reference objects with variablesReference?
-			ret.push(new Variable(key, executionContext.parameters[key].toString()));
-			/* add source, line, col, endline, end col */
+		for (const key in scope) {
+			// TODO: Set indexed/name child variable values
+			// TODO: Set line numbers
+			const value = scope[key];
+			ret.push(new Variable(key, value.default !== undefined ? value.default.toString() : value.toString()));
 		}
+
 		return ret;
 	}
 
@@ -279,6 +292,10 @@ export class Debugger extends EventEmitter {
 			expensive: false,
 			name: "Parameters",
 			variablesReference: 1
+		},{
+			expensive: false,
+			name: "Variables",
+			variablesReference: 2
 		}];
 	}
 
