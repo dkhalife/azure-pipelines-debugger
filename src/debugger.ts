@@ -118,13 +118,13 @@ export class Debugger extends EventEmitter {
 					try {
 						await this.newDocument(targetDocPath, params).then(() => {
 							this.contexts.pop();
-							this.currentContext().execution.notify();
+							ctxt.execution.notify();
 						});
 					} catch (error) {
 						this.shouldAbort = true;
 						if (error instanceof FileSystemError) {
 							this.emit("stopOnError", Debugger.MainThreadId, error.message);
-							await this.currentContext().execution.wait();
+							await ctxt.execution.wait();
 							return visit.BREAK;
 						}
 						else {
@@ -140,10 +140,10 @@ export class Debugger extends EventEmitter {
 						this.emit("stopOnStep", Debugger.MainThreadId);
 					}
 					this.stopOnNextNode = false;
-					await this.currentContext().execution.wait();
+					await ctxt.execution.wait();
 				} else if (this.breakpointManager.shouldBreak(doc, position.line)) {
 					this.emit("stopOnBreakpoint", Debugger.MainThreadId);
-					await this.currentContext().execution.wait();
+					await ctxt.execution.wait();
 				}
 
 				if (this.traversalControl === 'StepInto') {
@@ -176,7 +176,7 @@ export class Debugger extends EventEmitter {
 				};
 
 				this.emit("stopOnError", Debugger.MainThreadId, error.message);
-				await this.currentContext().execution.wait();
+				await ctxt.execution.wait();
 			}
 
 			return;
