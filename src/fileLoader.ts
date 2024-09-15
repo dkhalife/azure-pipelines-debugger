@@ -1,9 +1,11 @@
 import { Document, LineCounter, parseDocument } from "yaml";
 import { FileAccessor } from "./fileUtils";
+import { getReachableLines } from "./getReachableLines";
 
 export type DecoratedDocument = {
 	document: Document
 	lineCounter: LineCounter
+	reachableLines: Set<number>
 };
 
 export class FileLoader {
@@ -25,11 +27,15 @@ export class FileLoader {
 
 	private initializeContents(memory: Uint8Array) {
 		const lineCounter = new LineCounter();
-		return {
-			document: parseDocument(new TextDecoder().decode(memory), {
-				lineCounter
-			}),
+		const document = parseDocument(new TextDecoder().decode(memory), {
 			lineCounter
+		});
+		const reachableLines = getReachableLines(document, lineCounter);
+
+		return {
+			document,
+			lineCounter,
+			reachableLines
 		};
 	}
 }

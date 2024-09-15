@@ -89,7 +89,7 @@ export class Debugger extends EventEmitter {
 
 				// Encountered a pair that needs to be expanded
 				if (isScalar(value.key) && value.key.value === "template" && isScalar(value.value)) {
-					const docPath = value.value;
+					const docPath = value.value.toString();
 
 					// Attempt to find any parameters for that template
 					const parentNode = path[path.length-1] as Node;
@@ -180,15 +180,17 @@ export class Debugger extends EventEmitter {
 		this.currentContext().execution.notify();
 	}
 
-	public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
+	public async setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
 		const path = args.source.path as string;
 		const clientLines = args.lines || [];
 
+		const doc = await this.documentManager.getDoc(path);
+
 		// set and verify breakpoint locations
-		return clientLines.map(l => {
-			// verified = whether symbol for it was loaded or not
-			const bp = new Breakpoint(true, l) as DebugProtocol.Breakpoint;
-			bp.id = 10 * l;
+		return clientLines.map(line => {
+			const isValid = doc.reachableLines.has(line);
+			const source = new Source(basename(path), path);
+			const bp = new Breakpoint(isValid, line, 1, source);
 			return bp;
 		});
 	}

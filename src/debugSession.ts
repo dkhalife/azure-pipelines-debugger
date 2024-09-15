@@ -83,7 +83,7 @@ export class DebugSession extends LoggingDebugSession {
 
 	protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
 		response.body = {
-			breakpoints: this.debugger.setBreakpoints(args)
+			breakpoints: await this.debugger.setBreakpoints(args)
 		};
 		this.sendResponse(response);
 	}
