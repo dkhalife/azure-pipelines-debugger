@@ -3,7 +3,7 @@
 import { FileAccessor } from "./fileUtils";
 import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
-import { asyncVisitor, isMap, isScalar, Node, Pair, visit, visitAsync, YAMLMap } from "yaml";
+import { asyncVisitor, isMap, isScalar, Node, Pair, visit, visitAsync } from "yaml";
 import { Subject } from 'await-notify';
 import { Breakpoint, Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
@@ -190,7 +190,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public async start(file: string, stopOnEntry?: boolean): Promise<void> {
-		this.newDocument(file, new YAMLMap(), stopOnEntry).then(() => {
+		this.newDocument(file, {}, stopOnEntry).then(() => {
 			this.emit("stop");
 		});
 	}
@@ -241,9 +241,9 @@ export class Debugger extends EventEmitter {
 		}
 
 		const ret: Variable[] = [];
-		for (const key of Object.keys(executionContext.parameters)) {
+		for (const key in executionContext.parameters) {
 			// TODO: Design a scalable way to reference objects with variablesReference?
-			ret.push(new Variable(key, executionContext.parameters[key].value.toString()));
+			ret.push(new Variable(key, executionContext.parameters[key].toString()));
 			/* add source, line, col, endline, end col */
 		}
 		return ret;
