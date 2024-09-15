@@ -3,6 +3,7 @@ import { FileAccessor } from "./fileUtils";
 import { getReachableLines } from "./getReachableLines";
 
 export type DecoratedDocument = {
+	source: string
 	document: Document
 	lineCounter: LineCounter
 	reachableLines: Set<number>
@@ -14,7 +15,7 @@ export class FileLoader {
 
 	public async load(file: string): Promise<DecoratedDocument> {
 		file = this.normalizePathAndCasing(file);
-		return this.initializeContents(await this.fileAccessor.readFile(file));
+		return this.initialize(file, await this.fileAccessor.readFile(file));
 	}
 
 	private normalizePathAndCasing(path: string) {
@@ -25,14 +26,15 @@ export class FileLoader {
 		}
 	}
 
-	private initializeContents(memory: Uint8Array) {
+	private initialize(source: string, contents: Uint8Array) {
 		const lineCounter = new LineCounter();
-		const document = parseDocument(new TextDecoder().decode(memory), {
+		const document = parseDocument(new TextDecoder().decode(contents), {
 			lineCounter
 		});
 		const reachableLines = getReachableLines(document, lineCounter);
 
 		return {
+			source,
 			document,
 			lineCounter,
 			reachableLines
