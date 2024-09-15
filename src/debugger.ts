@@ -8,7 +8,8 @@ import { Subject } from 'await-notify';
 import { Breakpoint, Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { Stack } from "./stack";
-import { basename } from "path";
+import { basename, dirname, isAbsolute, join } from "path";
+import { FileSystemError } from "vscode";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -90,7 +91,10 @@ export class Debugger extends EventEmitter {
 
 				// Encountered a pair that needs to be expanded
 				if (isScalar(value.key) && value.key.value === "template" && isScalar(value.value)) {
-					const docPath = value.value.toString();
+					let targetDocPath = value.value.toString();
+					if (!isAbsolute(targetDocPath)) {
+						targetDocPath = join(dirname(doc.source), targetDocPath);
+					}
 
 					// Attempt to find any parameters for that template
 					const parentNode = path[path.length-1] as Node;
@@ -103,15 +107,23 @@ export class Debugger extends EventEmitter {
 						}
 					}
 
-					/*const parentWait = this.currentContext().execution.wait();
-					this.newDocument(docPath, params).then(() => {
-						this.contexts.pop();
-						this.currentContext().execution.notify();
-					});
+					try {
+						const parentWait = this.currentContext().execution.wait();
+						await this.newDocument(targetDocPath, params).then(() => {
+							this.contexts.pop();
+							this.currentContext().execution.notify();
+						});
 
-					await parentWait;*/
-
-					return visit.SKIP;
+						await parentWait;
+					} catch (error) {
+						if (error instanceof FileSystemError) {
+							this.emit("stopOnError", Debugger.MainThreadId, error.message);
+							await this.currentContext().execution.wait();
+						}
+						else {
+							throw error;
+						}
+					}
 				}
 
 				if (this.stopOnNextNode) {
@@ -133,10 +145,6 @@ export class Debugger extends EventEmitter {
 					// TODO: How to deal with breakpoint in child node
 					return visit.SKIP; // Skips children
 				}
-			},
-
-			Node: async (key, node, path): Promise<void> => {
-
 			},
 		};
 
