@@ -60,6 +60,7 @@ export class Debugger extends EventEmitter {
 	private traversalControl: VisitorControl = 'NextBreakPoint';
 	private stopOnNextNode: boolean = false;
 	private breakpoints: Set<number> = new Set<number>();
+	private shouldAbort: boolean = false;
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
@@ -81,6 +82,12 @@ export class Debugger extends EventEmitter {
 		const lineCounter = doc.lineCounter;
 		const visitor: asyncVisitor = {
 			Pair: async (symbol, value: Pair, path): Promise<void | symbol> => {
+				// When referenced documents generate errors, the following condition
+				// allows aborting the entire debugging session
+				if (this.shouldAbort) {
+					return visit.BREAK;
+				}
+
 				const ctxt = this.currentContext();
 				const position = lineCounter.linePos((value.key as any).range[0]);
 				ctxt.executionPointer = {
@@ -108,17 +115,16 @@ export class Debugger extends EventEmitter {
 					}
 
 					try {
-						const parentWait = this.currentContext().execution.wait();
 						await this.newDocument(targetDocPath, params).then(() => {
 							this.contexts.pop();
 							this.currentContext().execution.notify();
 						});
-
-						await parentWait;
 					} catch (error) {
+						this.shouldAbort = true;
 						if (error instanceof FileSystemError) {
 							this.emit("stopOnError", Debugger.MainThreadId, error.message);
 							await this.currentContext().execution.wait();
+							return visit.BREAK;
 						}
 						else {
 							throw error;
@@ -157,6 +163,8 @@ export class Debugger extends EventEmitter {
 		const errors = doc.document.errors;
 
 		if (errors.length > 0) {
+			this.shouldAbort = true;
+
 			for (const error of errors) {
 				const ctxt = this.currentContext();
 				const pos = lineCounter.linePos(error.pos[0]);
