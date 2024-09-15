@@ -10,6 +10,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { Stack } from "./stack";
 import { basename, dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
+import { BreakpointManager } from "./breakpointManager";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -55,17 +56,17 @@ type VisitorControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
 
 export class Debugger extends EventEmitter {
 	private documentManager: DocumentManager;
+	private breakpointManager: BreakpointManager = new BreakpointManager();
 	private static readonly MainThreadId: number = 1;
 	private contexts: Stack<ExecutionContext> = new Stack();
 	private traversalControl: VisitorControl = 'NextBreakPoint';
 	private stopOnNextNode: boolean = false;
-	private breakpoints: Set<number> = new Set<number>();
 	private shouldAbort: boolean = false;
 
 	constructor(fileAccessor: FileAccessor) {
 		super();
 
-		this.documentManager = new DocumentManager(fileAccessor);
+		this.documentManager = new DocumentManager(fileAccessor, this.breakpointManager);
 	}
 
 	private currentContext(): ExecutionContext {
@@ -140,7 +141,7 @@ export class Debugger extends EventEmitter {
 					}
 					this.stopOnNextNode = false;
 					await this.currentContext().execution.wait();
-				} else if (this.breakpoints.has(position.line)) {
+				} else if (this.breakpointManager.shouldBreak(doc, position.line)) {
 					this.emit("stopOnBreakpoint", Debugger.MainThreadId);
 					await this.currentContext().execution.wait();
 				}
@@ -202,26 +203,10 @@ export class Debugger extends EventEmitter {
 
 	public async setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
 		const path = args.source.path as string;
-		const clientLines = args.lines || [];
+		const clientLines: number[] = args.lines || [];
 
 		const doc = await this.documentManager.getDoc(path);
-		const breakpointLines = new Set<number>();
-
-		// set and verify breakpoint locations
-		const validatedBreakpoints = clientLines.map(line => {
-			const isValid = doc.reachableLines.has(line);
-			const source = new Source(basename(path), path);
-			const bp = new Breakpoint(isValid, line, 1, source);
-
-			if (isValid && !breakpointLines.has(line)) {
-				breakpointLines.add(line);
-			}
-
-			return bp;
-		});
-
-		this.breakpoints = breakpointLines;
-		return validatedBreakpoints;
+		return await this.breakpointManager.setBreakpoints(doc, clientLines);
 	}
 
 	public stepOver() {

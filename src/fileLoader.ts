@@ -1,16 +1,15 @@
 import { Document, LineCounter, parseDocument } from "yaml";
 import { FileAccessor } from "./fileUtils";
-import { getReachableLines } from "./getReachableLines";
+import { BreakpointManager } from "./breakpointManager";
 
 export type DecoratedDocument = {
 	source: string
 	document: Document
 	lineCounter: LineCounter
-	reachableLines: Set<number>
 };
 
 export class FileLoader {
-    constructor(private fileAccessor: FileAccessor) {
+    constructor(private fileAccessor: FileAccessor, private breakpointManager: BreakpointManager) {
 	}
 
 	public async load(file: string): Promise<DecoratedDocument> {
@@ -31,13 +30,14 @@ export class FileLoader {
 		const document = parseDocument(new TextDecoder().decode(contents), {
 			lineCounter
 		});
-		const reachableLines = getReachableLines(document, lineCounter);
 
-		return {
+		const doc = {
 			source,
 			document,
-			lineCounter,
-			reachableLines
+			lineCounter
 		};
+
+		this.breakpointManager.initializeDocument(doc);
+		return doc;
 	}
 }
