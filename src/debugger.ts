@@ -5,12 +5,12 @@ import { EventEmitter } from 'events';
 import { DocumentManager } from "./documentManager";
 import { asyncVisitor, isMap, isScalar, Node, Pair, visit, visitAsync } from "yaml";
 import { Subject } from 'await-notify';
-import { Breakpoint, Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
+import { Scope, Source, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
-import { Stack } from "./stack";
 import { basename, dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
 import { BreakpointManager } from "./breakpointManager";
+import { ExecutionContextManager } from "./executionContextManager";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -40,26 +40,13 @@ export type ExceptionInfo = {
 	details?: ExceptionDetails;
 };
 
-export type ExecutionPointer = {
-	file: string;
-	symbol: string;
-	position: { line: number, col: number }
-};
-
-type ExecutionContext = {
-	execution: Subject;
-	executionPointer: ExecutionPointer | null;
-	parameters: Object;
-	variables: Object;
-};
-
 type VisitorControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
 
 export class Debugger extends EventEmitter {
 	private documentManager: DocumentManager;
 	private breakpointManager: BreakpointManager = new BreakpointManager();
+	private executionContextManager: ExecutionContextManager = new ExecutionContextManager();
 	private static readonly MainThreadId: number = 1;
-	private contexts: Stack<ExecutionContext> = new Stack();
 	private traversalControl: VisitorControl = 'NextBreakPoint';
 	private stopOnNextNode: boolean = false;
 	private shouldAbort: boolean = false;
@@ -68,15 +55,6 @@ export class Debugger extends EventEmitter {
 		super();
 
 		this.documentManager = new DocumentManager(fileAccessor, this.breakpointManager);
-	}
-
-	private currentContext(): ExecutionContext {
-		const ctxt = this.contexts.top();
-		if (!ctxt) {
-			throw new Error("Expected to have at least one execution context.");
-		}
-
-		return ctxt;
 	}
 
 	private async newDocument(file: string, parameters: Object, stopOnEntry?: boolean) {
@@ -90,7 +68,7 @@ export class Debugger extends EventEmitter {
 					return visit.BREAK;
 				}
 
-				const ctxt = this.currentContext();
+				const ctxt = this.executionContextManager.currentContext();
 				const position = lineCounter.linePos((value.key as any).range[0]);
 				ctxt.executionPointer = {
 					file,
@@ -122,7 +100,7 @@ export class Debugger extends EventEmitter {
 
 					try {
 						await this.newDocument(targetDocPath, params).then(() => {
-							this.contexts.pop();
+							this.executionContextManager.pop();
 							ctxt.execution.notify();
 						});
 					} catch (error) {
@@ -160,21 +138,14 @@ export class Debugger extends EventEmitter {
 			},
 		};
 
-		const variables = this.contexts.isEmpty() ? {} : this.currentContext().variables;
-		this.contexts.push({
-			execution: new Subject(),
-			executionPointer: null,
-			parameters,
-			variables
-		});
+		this.executionContextManager.new(parameters);
 
 		const errors = doc.document.errors;
-
 		if (errors.length > 0) {
 			this.shouldAbort = true;
 
 			for (const error of errors) {
-				const ctxt = this.currentContext();
+				const ctxt = this.executionContextManager.currentContext();
 				const pos = lineCounter.linePos(error.pos[0]);
 				ctxt.executionPointer = {
 					file,
@@ -205,7 +176,7 @@ export class Debugger extends EventEmitter {
 	public resume() {
 		this.traversalControl = 'NextBreakPoint';
 		this.emit("continue", Debugger.MainThreadId);
-		this.currentContext().execution.notify();
+		this.executionContextManager.currentContext().execution.notify();
 	}
 
 	public async setBreakpoints(args: DebugProtocol.SetBreakpointsArguments) {
@@ -224,83 +195,38 @@ export class Debugger extends EventEmitter {
 		this.traversalControl = 'StepOver';
 		this.stopOnNextNode = true;
 		this.emit("continue", Debugger.MainThreadId);
-		this.currentContext().execution.notify();
+		this.executionContextManager.currentContext().execution.notify();
 	}
 
 	public stepInto() {
 		this.traversalControl = 'StepInto';
 		this.stopOnNextNode = true;
 		this.emit("continue", Debugger.MainThreadId);
-		this.currentContext().execution.notify();
+		this.executionContextManager.currentContext().execution.notify();
 	}
 
 	public stepOut() {
 	}
 
 	public getVariables(variablesReference: number, start: number, count: number): Variable[] {
-		if (this.contexts.isEmpty()) {
-			return [];
-		}
-
-		const executionContext = this.contexts.top();
-		if (!executionContext) {
-			return [];
-		}
-
-		// TODO: Design a scalable way to reference objects with variablesReference?
-		const ret: Variable[] = [];
-		let scope: Object = {};
-		if (variablesReference === 1) {
-			scope = executionContext.parameters;
-		} else if (variablesReference === 2) {
-			scope = executionContext.variables;
-		}
-
-		for (const key in scope) {
-			// TODO: Set indexed/name child variable values
-			// TODO: Set line numbers
-			const value = scope[key];
-			ret.push(new Variable(key, value.default !== undefined ? value.default.toString() : value.toString()));
-		}
-
-		return ret;
+		return this.executionContextManager.getVariables(variablesReference, start, count);
 	}
 
 	public getThreads(): Thread[] {
 		return [
 			{
-				id: 1,
+				id: Debugger.MainThreadId,
 				name: "main"
 			}
 		];
 	}
 
 	public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {
-		if (startFrame === 0) {
-			const ret: StackFrame[] = [];
-			const contexts = this.contexts;
-			// TODO: Unroll a range for each execution context instead of just the top value
-			for (let i=contexts.size()-1; i>=0; --i) {
-				const exectutionPointer = contexts.item(i)?.executionPointer;
-				const pos = exectutionPointer?.position;
-				ret.push(new StackFrame(i, exectutionPointer?.symbol || "unknown", new Source(basename(exectutionPointer?.file || "unknown"), exectutionPointer?.file), pos?.line, pos?.col));
-			}
-			return ret;
-		}
-
-		return [];
+		return this.executionContextManager.getStackTrace(startFrame, levels);
 	}
 
 	public getScopes(): Scope[] {
-		return [{
-			expensive: false,
-			name: "Parameters",
-			variablesReference: 1
-		},{
-			expensive: false,
-			name: "Variables",
-			variablesReference: 2
-		}];
+		return this.executionContextManager.getScopes();
 	}
 
 	public getExceptionInfo(): ExceptionInfo {
