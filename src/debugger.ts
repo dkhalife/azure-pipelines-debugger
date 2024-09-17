@@ -188,7 +188,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public setVariable(variablesReference: number, name: string, newValue: string) {
-		return newValue + "_changed";
+		return this.executionContextManager.setVariable(variablesReference, name, newValue);
 	}
 
 	public stepOver() {
