@@ -1,0 +1,28 @@
+name: testing
+trigger: none
+
+variables:
+  foo:
+    type: string
+    default: hello
+  bar:
+    type: boolean
+    default: false
+
+steps:
+- checkout: self
+- template: ./other.yml
+  parameters:
+    firstParam: 1
+    secondParam: 'a'
+# Some comment
+- task: CmdLine@2
+  inputs:
+    script: |
+      echo Hello from cmd CmdLine
+- template: ./other.yml
+- template: ./other.yml
+  parameters:
+    firstParam: 3
+    secondParam: 'b'
+# - template: ./nonexistant.yml

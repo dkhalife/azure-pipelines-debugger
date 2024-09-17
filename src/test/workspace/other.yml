@@ -1,0 +1,20 @@
+parameters:
+- name: firstParam
+  type: string
+- name: secondParam
+  type: boolean
+
+variables:
+  foo:
+    type: string
+    default: baz
+  bar:
+    type: boolean
+    default: true
+
+steps:
+- ${{ if eq(parameters.secondParam, 'true' }}:
+  - task: CmdLine@2
+    inputs:
+      script: |
+        echo Hello from cmd CmdLine
