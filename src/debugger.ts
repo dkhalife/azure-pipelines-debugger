@@ -140,7 +140,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public getVariables(variablesReference: number, start: number, count: number): Variable[] {
-		return this.executionContextManager.getVariables(variablesReference, start, count);
+		return this.executionContextManager.getExpressions(variablesReference, start, count);
 	}
 
 	public getThreads(): Thread[] {

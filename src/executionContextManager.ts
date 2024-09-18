@@ -41,7 +41,7 @@ export class ExecutionContextManager {
 		}];
     }
 
-    public getVariables(variablesReference: number, start: number, count: number): Variable[] {
+    public getExpressions(id: number, start: number, count: number): Variable[] {
         if (this.contexts.isEmpty()) {
 			return [];
 		}
@@ -49,14 +49,14 @@ export class ExecutionContextManager {
 		const executionContext = this.contexts.top();
 
 		let items: Expression[] = [];
-		if (variablesReference === ExecutionContextManager.ParametersReferenceId) {
+		if (id === ExecutionContextManager.ParametersReferenceId) {
 			items = executionContext.parameters;
-		} else if (variablesReference === ExecutionContextManager.VariablesReferenceId) {
+		} else if (id === ExecutionContextManager.VariablesReferenceId) {
 			items = executionContext.variables;
 		} else {
 			const innermostScope = executionContext.scopes.top();
-			if (innermostScope.has(variablesReference)) {
-				items = innermostScope.get(variablesReference)!;
+			if (innermostScope.has(id)) {
+				items = innermostScope.get(id)!;
 			}
 		}
 
