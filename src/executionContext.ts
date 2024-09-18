@@ -1,9 +1,14 @@
 import { Subject } from 'await-notify';
 
+export type SourceLocation = {
+	line: number;
+	col: number;
+};
+
 export type ExecutionPointer = {
 	file: string;
 	symbol: string;
-	position: { line: number, col: number }
+	position: SourceLocation
 };
 
 export type ExecutionContext = {

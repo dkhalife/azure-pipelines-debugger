@@ -16,13 +16,15 @@ export class ExecutionContextManager {
 		return ctxt;
 	}
 
-    public new(parameters: Object) {
+    public new(parameters: Object): ExecutionContext {
         this.contexts.push({
 			execution: new Subject(),
 			executionPointer: null,
 			parameters,
 			variables: {}
 		});
+
+		return this.currentContext();
     }
 
     public pop() {
