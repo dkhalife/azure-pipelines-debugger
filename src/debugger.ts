@@ -137,6 +137,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public stepOut() {
+		// TODO: implement
 	}
 
 	public getVariables(variablesReference: number, start: number, count: number): Variable[] {
