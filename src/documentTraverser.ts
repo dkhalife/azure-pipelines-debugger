@@ -84,7 +84,7 @@ export class DocumentTraverser {
     };
 
     public async traverse(): Promise<void> {
-        const errors = this.doc.document.errors;
+        const errors = this.doc.yaml.errors;
 		if (errors.length > 0) {
 			this.shouldAbort = true;
 
@@ -97,6 +97,6 @@ export class DocumentTraverser {
 			return;
 		}
 
-        return visitAsync(this.doc.document, this.visitor);
+        return visitAsync(this.doc.yaml, this.visitor);
     }
 }

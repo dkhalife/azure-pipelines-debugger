@@ -30,7 +30,7 @@ export class BreakpointManager {
             return;
         }
 
-        this.reachableLines.set(doc.source, this.getReachableLines(doc.document, doc.lineCounter));
+        this.reachableLines.set(doc.source, this.getReachableLines(doc.yaml, doc.lineCounter));
     };
 
     public setBreakpoints = async (doc: DecoratedDocument, clientLines: number[]) => {

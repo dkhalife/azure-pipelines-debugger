@@ -4,7 +4,7 @@ import { BreakpointManager } from "./breakpointManager";
 
 export type DecoratedDocument = {
 	source: string
-	document: Document
+	yaml: Document
 	lineCounter: LineCounter
 };
 
@@ -27,13 +27,13 @@ export class FileLoader {
 
 	private initialize(source: string, contents: Uint8Array) {
 		const lineCounter = new LineCounter();
-		const document = parseDocument(new TextDecoder().decode(contents), {
+		const yaml = parseDocument(new TextDecoder().decode(contents), {
 			lineCounter
 		});
 
 		const doc = {
 			source,
-			document,
+			yaml,
 			lineCounter
 		};
 
