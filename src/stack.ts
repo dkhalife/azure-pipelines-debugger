@@ -13,8 +13,12 @@ export class Stack<T> {
         return this.items[i];
     }
 
-    top(): T | undefined {
-        return this.item(this.items.length - 1);
+    top(): T {
+        if (this.items.length === 0) {
+            throw new Error("Stack is empty");
+        }
+
+        return this.items[this.items.length-1];
     }
 
     isEmpty(): boolean {

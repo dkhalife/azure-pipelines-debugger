@@ -1,4 +1,5 @@
 import { Subject } from 'await-notify';
+import { Stack } from './stack';
 
 export type SourceLocation = {
 	line: number;
@@ -11,9 +12,19 @@ export type ExecutionPointer = {
 	position: SourceLocation
 };
 
+export class Expression {
+	public id: number;
+
+	private static next_id: number = 3;
+	constructor(public readonly text: string, public value: string) {
+		this.id = Expression.next_id++;
+	}
+};
+
 export type ExecutionContext = {
 	execution: Subject;
 	executionPointer: ExecutionPointer | null;
-	parameters: Object;
-	variables: Object;
+	parameters: Expression[];
+	variables: Expression[];
+	scopes: Stack<Map<number, Expression[]>>
 };

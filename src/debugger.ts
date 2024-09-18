@@ -8,6 +8,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { BreakpointManager } from "./breakpointManager";
 import { ExecutionContextManager } from "./executionContextManager";
 import { DocumentTraverser, TarversalControl } from "./documentTraverser";
+import { Expression } from "./executionContext";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -51,7 +52,7 @@ export class Debugger extends EventEmitter {
 		this.documentManager = new DocumentManager(fileAccessor, this.breakpointManager);
 	}
 
-	private async newDocument(file: string, parameters: Object, stopOnEntry?: boolean) {
+	private async newDocument(file: string, parameters: Expression[], stopOnEntry?: boolean) {
 		const doc = await this.documentManager.getDoc(file);
 		const ctxt = this.executionContextManager.new(parameters);
 
@@ -60,7 +61,7 @@ export class Debugger extends EventEmitter {
 		}
 
 		const traverser = new DocumentTraverser(doc, ctxt, {
-			onTemplate: async (path: string, params: Object) => {
+			onTemplate: async (path: string, params: Expression[]) => {
 				await this.newDocument(path, params).then(() => {
 					this.executionContextManager.pop();
 					ctxt.execution.notify();
@@ -102,7 +103,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public async start(file: string, stopOnEntry?: boolean): Promise<void> {
-		this.newDocument(file, {}, stopOnEntry).then(() => {
+		this.newDocument(file, [], stopOnEntry).then(() => {
 			this.emit("stop");
 		});
 	}

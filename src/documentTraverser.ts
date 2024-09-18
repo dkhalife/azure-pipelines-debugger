@@ -2,10 +2,10 @@ import { asyncVisitor, isMap, isScalar, LineCounter, Node, Pair, visit, visitAsy
 import { DecoratedDocument } from "./fileLoader";
 import { dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
-import { ExecutionContext, SourceLocation } from "./executionContext";
+import { ExecutionContext, Expression, SourceLocation } from "./executionContext";
 
 export interface TraversalCallbacks {
-    onTemplate(path: string, parameters: Object): Promise<void>
+    onTemplate(path: string, parameters: Expression[]): Promise<void>
     onFileSystemError(message: string): Promise<void>
     onYamlParsingError(title: string, message: string, position: SourceLocation): Promise<void>
     onStep(position: SourceLocation): Promise<TarversalControl>
@@ -50,11 +50,13 @@ export class DocumentTraverser {
 
                 // Attempt to find any parameters for that template
                 const parentNode = path[path.length-1] as Node;
-                let params = {};
+                let params: Expression[] = [];
                 if (isMap(parentNode)) {
                     for (const kvp of parentNode.items) {
                         if (isScalar(kvp.key) && kvp.key.value === "parameters" && isMap(kvp.value)) {
-                            params = kvp.value.toJSON();
+                            params = kvp.value.items.map((value: Pair<unknown, unknown>): Expression => {
+                                return new Expression((value.key as any).toString(), (value.value as any).toString());
+                            });
                         }
                     }
                 }

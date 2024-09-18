@@ -1,27 +1,25 @@
 import { Scope, Source, StackFrame, Variable } from "@vscode/debugadapter";
-import { ExecutionContext } from "./executionContext";
+import { ExecutionContext, Expression } from "./executionContext";
 import { Stack } from "./stack";
 import { Subject } from 'await-notify';
 import { basename } from "path";
 
 export class ExecutionContextManager {
+	private static readonly ParametersReferenceId: number = 1;
+	private static readonly VariablesReferenceId: number = 2;
     private contexts: Stack<ExecutionContext> = new Stack();
 
 	public currentContext(): ExecutionContext {
-		const ctxt = this.contexts.top();
-		if (!ctxt) {
-			throw new Error("Expected to have at least one execution context.");
-		}
-
-		return ctxt;
+		return this.contexts.top();
 	}
 
-    public new(parameters: Object): ExecutionContext {
+    public new(parameters: Expression[]): ExecutionContext {
         this.contexts.push({
 			execution: new Subject(),
 			executionPointer: null,
 			parameters,
-			variables: {}
+			variables: [],
+			scopes: new Stack<Map<number, Expression[]>>()
 		});
 
 		return this.currentContext();
@@ -35,11 +33,11 @@ export class ExecutionContextManager {
 		return [{
 			expensive: false,
 			name: "Parameters",
-			variablesReference: 1
+			variablesReference: ExecutionContextManager.ParametersReferenceId
 		},{
 			expensive: false,
 			name: "Variables",
-			variablesReference: 2
+			variablesReference: ExecutionContextManager.VariablesReferenceId
 		}];
     }
 
@@ -49,24 +47,24 @@ export class ExecutionContextManager {
 		}
 
 		const executionContext = this.contexts.top();
-		if (!executionContext) {
-			return [];
+
+		let items: Expression[] = [];
+		if (variablesReference === ExecutionContextManager.ParametersReferenceId) {
+			items = executionContext.parameters;
+		} else if (variablesReference === ExecutionContextManager.VariablesReferenceId) {
+			items = executionContext.variables;
+		} else {
+			const innermostScope = executionContext.scopes.top();
+			if (innermostScope.has(variablesReference)) {
+				items = innermostScope.get(variablesReference)!;
+			}
 		}
 
-		// TODO: Design a scalable way to reference objects with variablesReference?
 		const ret: Variable[] = [];
-		let scope: Object = {};
-		if (variablesReference === 1) {
-			scope = executionContext.parameters;
-		} else if (variablesReference === 2) {
-			scope = executionContext.variables;
-		}
-
-		for (const key in scope) {
+		for (const item of items) {
 			// TODO: Set indexed/name child variable values
 			// TODO: Set line numbers
-			const value = scope[key];
-			ret.push(new Variable(key, value.default !== undefined ? value.default.toString() : value.toString()));
+			ret.push(new Variable(item.text, item.value, item.id));
 		}
 
 		return ret;
