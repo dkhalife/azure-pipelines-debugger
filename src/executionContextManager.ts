@@ -7,6 +7,8 @@ import { basename } from "path";
 export class ExecutionContextManager {
 	private static readonly ParametersReferenceId: number = 1;
 	private static readonly VariablesReferenceId: number = 2;
+	private static readonly ScopesReferenceId: number = 3;
+
     private contexts: Stack<ExecutionContext> = new Stack();
 
 	public currentContext(): ExecutionContext {
@@ -33,11 +35,15 @@ export class ExecutionContextManager {
 		return [{
 			expensive: false,
 			name: "Parameters",
-			variablesReference: ExecutionContextManager.ParametersReferenceId
+			variablesReference: ExecutionContextManager.ParametersReferenceId,
 		},{
 			expensive: false,
 			name: "Variables",
 			variablesReference: ExecutionContextManager.VariablesReferenceId
+		},{
+			expensive: false,
+			name: "Scopes",
+			variablesReference: ExecutionContextManager.ScopesReferenceId
 		}];
     }
 
@@ -53,21 +59,14 @@ export class ExecutionContextManager {
 			items = executionContext.parameters;
 		} else if (id === ExecutionContextManager.VariablesReferenceId) {
 			items = executionContext.variables;
-		} else {
+		} else if (!executionContext.scopes.isEmpty()) {
 			const innermostScope = executionContext.scopes.top();
 			if (innermostScope.has(id)) {
 				items = innermostScope.get(id)!;
 			}
 		}
 
-		const ret: Variable[] = [];
-		for (const item of items) {
-			// TODO: Set indexed/name child variable values
-			// TODO: Set line numbers
-			ret.push(new Variable(item.text, item.value, item.id));
-		}
-
-		return ret;
+		return items;
     }
 
     public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {

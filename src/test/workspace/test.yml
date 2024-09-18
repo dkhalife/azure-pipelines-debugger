@@ -2,12 +2,10 @@ name: testing
 trigger: none
 
 variables:
-  foo:
-    type: string
-    default: hello
-  bar:
-    type: boolean
-    default: false
+- name: foo
+  value: hello
+- name: bar
+  value: false
 
 steps:
 - checkout: self

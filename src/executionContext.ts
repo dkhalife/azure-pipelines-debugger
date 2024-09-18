@@ -1,5 +1,6 @@
 import { Subject } from 'await-notify';
 import { Stack } from './stack';
+import { Variable } from '@vscode/debugadapter';
 
 export type SourceLocation = {
 	line: number;
@@ -12,12 +13,10 @@ export type ExecutionPointer = {
 	position: SourceLocation
 };
 
-export class Expression {
-	public id: number;
-
-	private static next_id: number = 3;
-	constructor(public readonly text: string, public value: string) {
-		this.id = Expression.next_id++;
+export class Expression extends Variable {
+	private static next_id: number = 4;
+	constructor(public readonly name: string, public value: string, private children: Expression[] = []) {
+		super(name, value, children.length > 0 ? Expression.next_id++ : undefined);
 	}
 };
 

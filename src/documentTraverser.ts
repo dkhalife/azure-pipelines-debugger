@@ -1,8 +1,9 @@
-import { asyncVisitor, isMap, isScalar, LineCounter, Node, Pair, visit, visitAsync } from "yaml";
+import { asyncVisitor, isMap, isScalar, isSeq, LineCounter, Node, Pair, visit, visitAsync, YAMLMap, YAMLSeq } from "yaml";
 import { DecoratedDocument } from "./fileLoader";
 import { dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
 import { ExecutionContext, Expression, SourceLocation } from "./executionContext";
+import { parseVariables, parseParameters } from "./azurePipelines";
 
 export interface TraversalCallbacks {
     onTemplate(path: string, parameters: Expression[]): Promise<void>
@@ -37,8 +38,8 @@ export class DocumentTraverser {
                 position
             };
 
-            if (isScalar(value.key) && value.key.value === "variables" && isMap(value.value)) {
-                ctxt.variables = value.value.toJSON();
+            if (isScalar(value.key) && value.key.value === "variables" && isSeq(value.value)) {
+                ctxt.variables = parseVariables(value.value);
             }
 
             // Encountered a pair that needs to be expanded
@@ -54,9 +55,7 @@ export class DocumentTraverser {
                 if (isMap(parentNode)) {
                     for (const kvp of parentNode.items) {
                         if (isScalar(kvp.key) && kvp.key.value === "parameters" && isMap(kvp.value)) {
-                            params = kvp.value.items.map((value: Pair<unknown, unknown>): Expression => {
-                                return new Expression((value.key as any).toString(), (value.value as any).toString());
-                            });
+                            params = parseParameters(kvp.value);
                         }
                     }
                 }

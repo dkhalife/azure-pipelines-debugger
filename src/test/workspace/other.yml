@@ -5,12 +5,10 @@ parameters:
   type: boolean
 
 variables:
-  foo:
-    type: string
-    default: baz
-  bar:
-    type: boolean
-    default: true
+- name: foo
+  value: world
+- name: bar
+  value: true
 
 steps:
 - ${{ if eq(parameters.secondParam, 'true' }}:
