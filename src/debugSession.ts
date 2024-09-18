@@ -40,7 +40,7 @@ export class DebugSession extends LoggingDebugSession {
 		response.body.supportsExceptionFilterOptions = false;
 		response.body.exceptionBreakpointFilters = [];
 		response.body.supportsExceptionInfoRequest = false;
-		response.body.supportsSetVariable = true;
+		response.body.supportsSetVariable = false;
     	response.body.supportsSetExpression = false;
 		response.body.supportsDisassembleRequest = false;
 		response.body.supportsSteppingGranularity = false;
@@ -111,13 +111,6 @@ export class DebugSession extends LoggingDebugSession {
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): void {
 		response.body = response.body || {};
 		response.body.variables = this.debugger.getVariables(args.variablesReference, args.start || 0, args.count || 0);
-
-		this.sendResponse(response);
-	}
-
-	protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): void {
-		response.body = response.body || {};
-		response.body.value = this.debugger.setVariable(args.variablesReference, args.name, args.value);
 
 		this.sendResponse(response);
 	}

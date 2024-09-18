@@ -121,10 +121,6 @@ export class Debugger extends EventEmitter {
 		return await this.breakpointManager.setBreakpoints(doc, clientLines);
 	}
 
-	public setVariable(variablesReference: number, name: string, newValue: string) {
-		return this.executionContextManager.setVariable(variablesReference, name, newValue);
-	}
-
 	public stepOver() {
 		this.traversalControl = 'StepOver';
 		this.stopOnNextNode = true;

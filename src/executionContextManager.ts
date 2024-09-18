@@ -72,10 +72,6 @@ export class ExecutionContextManager {
 		return ret;
     }
 
-    public setVariable(variablesReference: number, name: string, newValue: string) {
-        return newValue + "_changed";
-    }
-
     public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {
 		if (startFrame === 0) {
 			const ret: StackFrame[] = [];
