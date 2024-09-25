@@ -37,6 +37,6 @@ export type ExecutionContext = {
 	execution: Subject;
 	executionPointer: ExecutionPointer | null;
 	paramsReferenceId: number;
-	variables: Expression[];
+	variablesReferenceId: number;
 	scopes: Stack<Map<number, Expression[]>>
 };

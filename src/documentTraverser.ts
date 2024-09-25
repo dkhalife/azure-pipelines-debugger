@@ -39,7 +39,12 @@ export class DocumentTraverser {
             };
 
             if (isScalar(value.key) && value.key.value === "variables" && isSeq(value.value)) {
-                ctxt.variables = parseVariables(value.value);
+                const children = parseVariables(value.value);
+
+                if (children.length > 0) {
+                    const vars = new Expression("Variables", "", children);
+                    ctxt.variablesReferenceId = vars.variablesReference;
+                }
             }
 
             // Encountered a pair that needs to be expanded
