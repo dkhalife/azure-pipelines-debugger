@@ -10,7 +10,7 @@ export function parseParameters(params: YAMLMap<unknown, unknown> | YAMLSeq<unkn
                 continue;
             }
 
-            const value = isScalar(item.value) ? item.value.toString() : "";
+            const value = isScalar(item.value) ? item.value.toString() : JSON.stringify((item.value as Node).toJSON());
             let children = isCollection(item.value) ? parseParameters(item.value) : [];
 
             ret.push(new Expression(item.key.value as string, value, children));
@@ -18,7 +18,7 @@ export function parseParameters(params: YAMLMap<unknown, unknown> | YAMLSeq<unkn
     } else if (isSeq(params)) {
         for (let i = 0; i < params.items.length; ++i) {
             const item = params.items[i];
-            const value = isScalar(item) ? item.toString() : "";
+            const value = isScalar(item) ? item.toString() : JSON.stringify((item as Node).toJSON());
             let children = isCollection(item) ? parseParameters(item) : [];
 
             ret.push(new Expression(i.toString(), value, children));
