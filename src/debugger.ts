@@ -8,7 +8,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { BreakpointManager } from "./breakpointManager";
 import { ExecutionContextManager } from "./executionContextManager";
 import { DocumentTraverser, TarversalControl } from "./documentTraverser";
-import { Expression } from "./executionContext";
+import { getExpression } from "./executionContext";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -141,7 +141,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public getVariables(variablesReference: number, start: number, count: number): Variable[] {
-		return this.executionContextManager.getExpressions(variablesReference, start, count);
+		return getExpression(variablesReference).children;
 	}
 
 	public getThreads(): Thread[] {

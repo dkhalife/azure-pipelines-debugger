@@ -5,8 +5,6 @@ import { Subject } from 'await-notify';
 import { basename } from "path";
 
 export class ExecutionContextManager {
-	private static readonly ScopesReferenceId: number = 3;
-
     private contexts: Stack<ExecutionContext> = new Stack();
 
 	public currentContext(): ExecutionContext {
@@ -19,7 +17,7 @@ export class ExecutionContextManager {
 			executionPointer: null,
 			paramsReferenceId,
 			variablesReferenceId: -1,
-			scopes: new Stack<Map<number, Expression[]>>()
+			scopesReferenceId: -1
 		});
 
 		return this.currentContext();
@@ -32,40 +30,30 @@ export class ExecutionContextManager {
     public getScopes(): Scope[] {
 		const ctxt = this.currentContext();
 
-		return [{
+		const ret = [{
 			expensive: false,
 			name: "Parameters",
 			variablesReference: ctxt.paramsReferenceId,
-		},{
-			expensive: false,
-			name: "Variables",
-			variablesReference: ctxt.variablesReferenceId
-		},{
-			expensive: false,
-			name: "Scopes",
-			variablesReference: ExecutionContextManager.ScopesReferenceId
 		}];
-    }
-
-    public getExpressions(id: number, start: number, count: number): Variable[] {
-        if (this.contexts.isEmpty()) {
-			return [];
+		
+		if (ctxt.variablesReferenceId !== -1) {
+			ret.push({
+				expensive: false,
+				name: "Variables",
+				variablesReference: ctxt.variablesReferenceId
+			});
 		}
 
-		const executionContext = this.contexts.top();
-
-		let items: Expression[] = [];
-		if (!executionContext.scopes.isEmpty()) {
-			const innermostScope = executionContext.scopes.top();
-			if (innermostScope.has(id)) {
-				items = innermostScope.get(id)!;
-			}
-		} else {
-			items = getExpression(id).children;
+		if (ctxt.scopesReferenceId !== -1) {
+			ret.push({
+				expensive: false,
+				name: "Scopes",
+				variablesReference: ctxt.scopesReferenceId
+			});
 		}
 
-		return items;
-    }
+		return ret;
+	}
 
     public getStackTrace(startFrame: number | undefined, levels: number | undefined): StackFrame[] {
 		if (startFrame === 0) {
