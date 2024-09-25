@@ -1,14 +1,31 @@
-import { YAMLMap, YAMLSeq, isMap, isScalar } from "yaml";
+import { Node, Scalar, YAMLMap, YAMLSeq, isCollection, isMap, isScalar, isSeq } from "yaml";
 import { Expression } from "./expression";
 
-export function parseParameters(params: YAMLMap<unknown, unknown>): Expression[] {
-    // TODO: implement and support recursive properties
-    return [
-        new Expression("foo", "", [
-            new Expression("a", "1"),
-            new Expression("x", "2"),
-        ])
-    ];
+export function parseParameters(params: YAMLMap<unknown, unknown> | YAMLSeq<unknown>): Expression[] {
+    const ret: Expression[] = [];
+    
+    if (isMap(params)) {
+        for (const item of params.items) {
+            if (!isScalar(item.key)) {
+                continue;
+            }
+
+            const value = isScalar(item.value) ? item.value.toString() : "";
+            let children = isCollection(item.value) ? parseParameters(item.value) : [];
+
+            ret.push(new Expression(item.key.value as string, value, children));
+        }
+    } else if (isSeq(params)) {
+        for (let i = 0; i < params.items.length; ++i) {
+            const item = params.items[i];
+            const value = isScalar(item) ? item.toString() : "";
+            let children = isCollection(item) ? parseParameters(item) : [];
+
+            ret.push(new Expression(i.toString(), value, children));
+        }
+    }
+
+    return ret;
 }
 
 export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {
