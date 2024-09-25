@@ -5,7 +5,6 @@ import { Subject } from 'await-notify';
 import { basename } from "path";
 
 export class ExecutionContextManager {
-	private static readonly ParametersReferenceId: number = 1;
 	private static readonly VariablesReferenceId: number = 2;
 	private static readonly ScopesReferenceId: number = 3;
 
@@ -15,11 +14,11 @@ export class ExecutionContextManager {
 		return this.contexts.top();
 	}
 
-    public new(parameters: Expression[]): ExecutionContext {
+    public new(paramsReferenceId: number): ExecutionContext {
         this.contexts.push({
 			execution: new Subject(),
 			executionPointer: null,
-			parameters,
+			paramsReferenceId,
 			variables: [],
 			scopes: new Stack<Map<number, Expression[]>>()
 		});
@@ -32,10 +31,12 @@ export class ExecutionContextManager {
     }
 
     public getScopes(): Scope[] {
+		const ctxt = this.currentContext();
+
 		return [{
 			expensive: false,
 			name: "Parameters",
-			variablesReference: ExecutionContextManager.ParametersReferenceId,
+			variablesReference: ctxt.paramsReferenceId,
 		},{
 			expensive: false,
 			name: "Variables",
@@ -55,9 +56,7 @@ export class ExecutionContextManager {
 		const executionContext = this.contexts.top();
 
 		let items: Expression[] = [];
-		if (id === ExecutionContextManager.ParametersReferenceId) {
-			items = executionContext.parameters;
-		} else if (id === ExecutionContextManager.VariablesReferenceId) {
+		if (id === ExecutionContextManager.VariablesReferenceId) {
 			items = executionContext.variables;
 		} else if (!executionContext.scopes.isEmpty()) {
 			const innermostScope = executionContext.scopes.top();

@@ -36,7 +36,7 @@ export const getExpression = (id: number): Expression => {
 export type ExecutionContext = {
 	execution: Subject;
 	executionPointer: ExecutionPointer | null;
-	parameters: Expression[];
+	paramsReferenceId: number;
 	variables: Expression[];
 	scopes: Stack<Map<number, Expression[]>>
 };

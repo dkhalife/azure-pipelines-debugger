@@ -6,7 +6,7 @@ import { ExecutionContext, Expression, SourceLocation } from "./executionContext
 import { parseVariables, parseParameters } from "./azurePipelines";
 
 export interface TraversalCallbacks {
-    onTemplate(path: string, parameters: Expression[]): Promise<void>
+    onTemplate(path: string, parametersReferenceId: number): Promise<void>
     onFileSystemError(message: string): Promise<void>
     onYamlParsingError(title: string, message: string, position: SourceLocation): Promise<void>
     onStep(position: SourceLocation): Promise<TarversalControl>
@@ -51,17 +51,18 @@ export class DocumentTraverser {
 
                 // Attempt to find any parameters for that template
                 const parentNode = path[path.length-1] as Node;
-                let params: Expression[] = [];
+                let childern: Expression[] = [];
                 if (isMap(parentNode)) {
                     for (const kvp of parentNode.items) {
                         if (isScalar(kvp.key) && kvp.key.value === "parameters" && isMap(kvp.value)) {
-                            params = parseParameters(kvp.value);
+                            childern = parseParameters(kvp.value);
                         }
                     }
                 }
 
+                const params = new Expression("Parameters", "", childern);
                 try {
-                    await this.callbacks.onTemplate(targetDocPath, params);
+                    await this.callbacks.onTemplate(targetDocPath, params.variablesReference);
                 } catch (error) {
                     this.shouldAbort = true;
                     if (error instanceof FileSystemError) {

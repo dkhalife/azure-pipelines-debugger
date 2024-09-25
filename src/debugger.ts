@@ -52,17 +52,17 @@ export class Debugger extends EventEmitter {
 		this.documentManager = new DocumentManager(fileAccessor, this.breakpointManager);
 	}
 
-	private async newDocument(file: string, parameters: Expression[], stopOnEntry?: boolean) {
+	private async newDocument(file: string, parametersReferenceId: number, stopOnEntry?: boolean) {
 		const doc = await this.documentManager.getDoc(file);
-		const ctxt = this.executionContextManager.new(parameters);
+		const ctxt = this.executionContextManager.new(parametersReferenceId);
 
 		if (stopOnEntry) {
 			this.stopOnNextNode = true;
 		}
 
 		const traverser = new DocumentTraverser(doc, ctxt, {
-			onTemplate: async (path: string, params: Expression[]) => {
-				await this.newDocument(path, params).then(() => {
+			onTemplate: async (path: string, paramsReferenceId: number) => {
+				await this.newDocument(path, paramsReferenceId).then(() => {
 					this.executionContextManager.pop();
 					ctxt.execution.notify();
 				});
@@ -103,7 +103,7 @@ export class Debugger extends EventEmitter {
 	}
 
 	public async start(file: string, stopOnEntry?: boolean): Promise<void> {
-		this.newDocument(file, [], stopOnEntry).then(() => {
+		this.newDocument(file, -1, stopOnEntry).then(() => {
 			this.emit("stop");
 		});
 	}
