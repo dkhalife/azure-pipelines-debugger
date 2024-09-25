@@ -1,5 +1,5 @@
 import { YAMLMap, YAMLSeq, isMap, isScalar } from "yaml";
-import { Expression } from "./executionContext";
+import { Expression } from "./expression";
 
 export function parseParameters(params: YAMLMap<unknown, unknown>): Expression[] {
     // TODO: implement and support recursive properties

@@ -1,5 +1,5 @@
 import { Scope, Source, StackFrame, Variable } from "@vscode/debugadapter";
-import { ExecutionContext, Expression, getExpression } from "./executionContext";
+import { ExecutionContext } from "./executionContext";
 import { Stack } from "./stack";
 import { Subject } from 'await-notify';
 import { basename } from "path";

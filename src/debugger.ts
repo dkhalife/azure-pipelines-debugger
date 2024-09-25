@@ -8,7 +8,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { BreakpointManager } from "./breakpointManager";
 import { ExecutionContextManager } from "./executionContextManager";
 import { DocumentTraverser, TarversalControl } from "./documentTraverser";
-import { getExpression } from "./executionContext";
+import { getExpression } from "./expression";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 

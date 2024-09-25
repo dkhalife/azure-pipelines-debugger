@@ -2,8 +2,9 @@ import { asyncVisitor, isMap, isScalar, isSeq, LineCounter, Node, Pair, visit, v
 import { DecoratedDocument } from "./fileLoader";
 import { dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
-import { ExecutionContext, Expression, SourceLocation } from "./executionContext";
+import { ExecutionContext, SourceLocation } from "./executionContext";
 import { parseVariables, parseParameters } from "./azurePipelines";
+import { Expression } from "./expression";
 
 export interface TraversalCallbacks {
     onTemplate(path: string, parametersReferenceId: number): Promise<void>
