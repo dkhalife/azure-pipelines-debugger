@@ -1,5 +1,5 @@
 import { Scope, Source, StackFrame, Variable } from "@vscode/debugadapter";
-import { ExecutionContext, Expression } from "./executionContext";
+import { ExecutionContext, Expression, getExpression } from "./executionContext";
 import { Stack } from "./stack";
 import { Subject } from 'await-notify';
 import { basename } from "path";
@@ -64,6 +64,8 @@ export class ExecutionContextManager {
 			if (innermostScope.has(id)) {
 				items = innermostScope.get(id)!;
 			}
+		} else {
+			items = getExpression(id).children;
 		}
 
 		return items;

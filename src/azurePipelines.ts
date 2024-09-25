@@ -3,7 +3,12 @@ import { Expression } from "./executionContext";
 
 export function parseParameters(params: YAMLMap<unknown, unknown>): Expression[] {
     // TODO: implement and support recursive properties
-    return [];
+    return [
+        new Expression("foo", "", [
+            new Expression("a", "1"),
+            new Expression("x", "2"),
+        ])
+    ];
 }
 
 export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {

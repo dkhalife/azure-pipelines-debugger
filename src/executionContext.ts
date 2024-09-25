@@ -13,12 +13,25 @@ export type ExecutionPointer = {
 	position: SourceLocation
 };
 
+const expressionStore: (Expression | null)[] = [null, null, null];
 export class Expression extends Variable {
-	private static next_id: number = 4;
-	constructor(public readonly name: string, public value: string, private children: Expression[] = []) {
+	private static next_id: number = 3;
+	constructor(public readonly name: string, public value: string, public children: Expression[] = []) {
 		super(name, value, children.length > 0 ? Expression.next_id++ : undefined);
+
+		if (children.length > 0) {
+			expressionStore.push(this);
+		}
 	}
 };
+
+export const getExpression = (id: number): Expression => {
+	if (id < 0 || id >= expressionStore.length) {
+		throw new Error("Invalid argument: id=" + id);
+	}
+
+	return expressionStore[id] as Expression;
+}
 
 export type ExecutionContext = {
 	execution: Subject;
