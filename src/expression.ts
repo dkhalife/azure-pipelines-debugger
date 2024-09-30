@@ -19,3 +19,13 @@ export const getExpression = (id: number): Expression => {
 
 	return expressionStore[id] as Expression;
 }
+
+export const hasNamedChild = (expr: Expression, name: string): boolean => {
+	for (const child of expr.children) {
+		if (child.name === name) {
+			return true;
+		}
+	}
+
+	return false;
+}

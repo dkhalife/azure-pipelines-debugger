@@ -1,5 +1,5 @@
 import { Node, Scalar, YAMLMap, YAMLSeq, isCollection, isMap, isScalar, isSeq } from "yaml";
-import { Expression } from "./expression";
+import { Expression, hasNamedChild } from "./expression";
 
 export function parseParameterArguments(params: YAMLMap<unknown, unknown> | YAMLSeq<unknown>): Expression[] {
     const ret: Expression[] = [];
@@ -26,6 +26,48 @@ export function parseParameterArguments(params: YAMLMap<unknown, unknown> | YAML
     }
 
     return ret;
+}
+
+export function parseParameterSpecAndMerge(params: YAMLSeq<unknown>, finalParams: Expression) {
+    // Since the parameter values would have already been parsed at the call site,
+    // and those take priority, we only care here about returning whichever ones
+    // have default values and were not already provided
+    for (const v of params.items) {
+        if (!isMap(v)) {
+            continue;
+        }
+
+        let name: string | null = null;
+        let defaultValue: Expression[] | undefined;
+        let defaultValueJSON: string | null = null
+        let skip = false;
+
+        for (const attribute of v.items) {
+            if (isScalar(attribute.key) && attribute.key.value === "name" && isScalar(attribute.value)) {
+                name = attribute.value.toString();
+
+                if (hasNamedChild(finalParams, name)) {
+                    skip = true;
+                }
+            }
+
+            if (isScalar(attribute.key) && attribute.key.value === "default") {
+                if (isScalar(attribute.value)) {
+                    defaultValueJSON = attribute.value.toString();
+                } else if (isMap(attribute.value) || isSeq(attribute.value)) {
+                    defaultValue = parseParameterArguments(attribute.value)
+                    defaultValueJSON = JSON.stringify(attribute.value.toJSON());
+                }
+            }
+        }
+
+        if (skip || !name || !defaultValueJSON) {
+            continue;
+        }
+
+        // Found a missing key in finalParams that has a default value, let's add it
+        finalParams.children.push(new Expression(name, defaultValueJSON, defaultValue));
+    }
 }
 
 export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {

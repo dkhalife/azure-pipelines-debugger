@@ -3,8 +3,8 @@ import { DecoratedDocument } from "./fileLoader";
 import { dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
 import { ExecutionContext, SourceLocation } from "./executionContext";
-import { parseVariables, parseParameterArguments } from "./azurePipelines";
-import { Expression } from "./expression";
+import { parseVariables, parseParameterArguments, parseParameterSpecAndMerge } from "./azurePipelines";
+import { Expression, getExpression } from "./expression";
 
 export interface TraversalCallbacks {
     onTemplate(path: string, parametersReferenceId: number): Promise<void>
@@ -38,6 +38,11 @@ export class DocumentTraverser {
                 symbol: (value as any).key.value,
                 position
             };
+
+            if (isScalar(value.key) && value.key.value === "parameters" && isSeq(value.value) && path.length === 2) {
+                let finalParams = getExpression(ctxt.paramsReferenceId);
+                parseParameterSpecAndMerge(value.value, finalParams);
+            }
 
             if (isScalar(value.key) && value.key.value === "variables" && isSeq(value.value)) {
                 const children = parseVariables(value.value);
