@@ -1,7 +1,7 @@
 import { Node, Scalar, YAMLMap, YAMLSeq, isCollection, isMap, isScalar, isSeq } from "yaml";
 import { Expression } from "./expression";
 
-export function parseParameters(params: YAMLMap<unknown, unknown> | YAMLSeq<unknown>): Expression[] {
+export function parseParameterArguments(params: YAMLMap<unknown, unknown> | YAMLSeq<unknown>): Expression[] {
     const ret: Expression[] = [];
     
     if (isMap(params)) {
@@ -11,7 +11,7 @@ export function parseParameters(params: YAMLMap<unknown, unknown> | YAMLSeq<unkn
             }
 
             const value = isScalar(item.value) ? item.value.toString() : JSON.stringify((item.value as Node).toJSON());
-            let children = isCollection(item.value) ? parseParameters(item.value) : [];
+            let children = isCollection(item.value) ? parseParameterArguments(item.value) : [];
 
             ret.push(new Expression(item.key.value as string, value, children));
         }
@@ -19,7 +19,7 @@ export function parseParameters(params: YAMLMap<unknown, unknown> | YAMLSeq<unkn
         for (let i = 0; i < params.items.length; ++i) {
             const item = params.items[i];
             const value = isScalar(item) ? item.toString() : JSON.stringify((item as Node).toJSON());
-            let children = isCollection(item) ? parseParameters(item) : [];
+            let children = isCollection(item) ? parseParameterArguments(item) : [];
 
             ret.push(new Expression(i.toString(), value, children));
         }

@@ -3,7 +3,7 @@ import { DecoratedDocument } from "./fileLoader";
 import { dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
 import { ExecutionContext, SourceLocation } from "./executionContext";
-import { parseVariables, parseParameters } from "./azurePipelines";
+import { parseVariables, parseParameterArguments } from "./azurePipelines";
 import { Expression } from "./expression";
 
 export interface TraversalCallbacks {
@@ -61,7 +61,7 @@ export class DocumentTraverser {
                 if (isMap(parentNode)) {
                     for (const kvp of parentNode.items) {
                         if (isScalar(kvp.key) && kvp.key.value === "parameters" && isMap(kvp.value)) {
-                            childern = parseParameters(kvp.value);
+                            childern = parseParameterArguments(kvp.value);
                         }
                     }
                 }
