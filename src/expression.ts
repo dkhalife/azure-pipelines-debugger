@@ -6,9 +6,7 @@ export class Expression extends Variable {
 	constructor(public readonly name: string, public value: string, public children: Expression[] = []) {
 		super(name, value, children.length > 0 ? Expression.next_id++ : undefined);
 
-		if (children.length > 0 || Expression.next_id == 0) {
-			expressionStore.push(this);
-		}
+		expressionStore.push(this);
 	}
 };
 
