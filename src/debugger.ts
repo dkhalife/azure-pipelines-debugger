@@ -8,7 +8,7 @@ import { DebugProtocol } from "@vscode/debugprotocol";
 import { BreakpointManager } from "./breakpointManager";
 import { ExecutionContextManager } from "./executionContextManager";
 import { DocumentTraverser, TarversalControl } from "./documentTraverser";
-import { getExpression } from "./expression";
+import { Expression, getExpression } from "./expression";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -103,7 +103,8 @@ export class Debugger extends EventEmitter {
 	}
 
 	public async start(file: string, stopOnEntry?: boolean): Promise<void> {
-		this.newDocument(file, -1, stopOnEntry).then(() => {
+		const startupParams = new Expression("Parameters", "", []);
+		this.newDocument(file, startupParams.variablesReference, stopOnEntry).then(() => {
 			this.emit("stop");
 		});
 	}
