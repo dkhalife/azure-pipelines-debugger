@@ -12,8 +12,12 @@ export const isTemplateExpression = (node: Node): boolean => {
 }
 
 export const addTemplateExpressions = (ctxt: ExecutionContext, expressions: Expression[]) => {
+    if (expressions.length === 0) {
+        return;
+    }
+
     if (ctxt.templateExpressionsReferenceId == -1) {
-        new Expression("Template expressions", "", expressions);
+        ctxt.templateExpressionsReferenceId = new Expression("Template expressions", "", expressions).variablesReference;
         return;
     }
 

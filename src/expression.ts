@@ -1,12 +1,20 @@
 import { Variable } from "@vscode/debugadapter";
 
-const expressionStore: Expression[] = [];
+let expressionStore: Expression[] = [];
 export class Expression extends Variable {
 	private static next_id: number = 0;
-	constructor(public readonly name: string, public value: string, public children: Expression[] = []) {
-		super(name, value, children.length > 0 ? Expression.next_id++ : undefined);
 
-		expressionStore.push(this);
+	public static resetStore() {
+		expressionStore = [];
+		Expression.next_id = 0;
+	}
+
+	constructor(public readonly name: string, public value: string, public children: Expression[] = [], forceRef: boolean = false) {
+		super(name, value, (forceRef || children.length > 0) ? Expression.next_id++ : undefined);
+
+		if (forceRef || children.length > 0) {
+			expressionStore.push(this);
+		}
 	}
 };
 

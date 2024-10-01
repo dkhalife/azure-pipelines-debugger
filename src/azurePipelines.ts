@@ -103,5 +103,16 @@ export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {
 }
 
 export const parseTemplateExpression = (expression: string): Expression[] => {
+    if (expression.indexOf("and(") !== -1) {
+        return [
+            new Expression("and(eq(parameters.firstParam, '1'), eq(parameters.secondParam, '2'))", "false", [
+                new Expression("eq(parameters.firstParam, '1')", "true", [new Expression("parameters.firstParam", "1")]),
+                new Expression("eq(parameters.secondParam, '2')", "false", [new Expression("parameters.secondParam", "3")])
+            ])
+        ]
+    } else if (expression.indexOf("variables.foo") !== -1) {
+        return [new Expression("variables.foo", "hello")];
+    }
+
     return [];
 }

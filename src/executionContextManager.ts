@@ -47,7 +47,7 @@ export class ExecutionContextManager {
 		if (ctxt.templateExpressionsReferenceId !== -1) {
 			ret.push({
 				expensive: false,
-				name: "Scopes",
+				name: "Template Expressions",
 				variablesReference: ctxt.templateExpressionsReferenceId
 			});
 		}

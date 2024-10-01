@@ -40,6 +40,8 @@ export class DocumentTraverser {
                 position
             };
 
+            // TODO: temporary hack to create illusion of scopes
+            ctxt.templateExpressionsReferenceId = -1;
             if (isTemplateExpression(value.key as Node)) {
                 addTemplateExpressions(ctxt, parseTemplateExpression((value.key as Scalar).toString()));
             }
@@ -80,7 +82,7 @@ export class DocumentTraverser {
                     }
                 }
 
-                const params = new Expression("Parameters", "", childern);
+                const params = new Expression("Parameters", "", childern, true);
                 try {
                     await this.callbacks.onTemplate(targetDocPath, params.variablesReference);
                 } catch (error) {

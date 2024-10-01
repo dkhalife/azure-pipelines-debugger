@@ -103,7 +103,8 @@ export class Debugger extends EventEmitter {
 	}
 
 	public async start(file: string, stopOnEntry?: boolean): Promise<void> {
-		const startupParams = new Expression("Parameters", "", []);
+		Expression.resetStore();
+		const startupParams = new Expression("Parameters", "", [], true);
 		this.newDocument(file, startupParams.variablesReference, stopOnEntry).then(() => {
 			this.emit("stop");
 		});
