@@ -1,10 +1,11 @@
-import { asyncVisitor, isMap, isScalar, isSeq, LineCounter, Node, Pair, visit, visitAsync, YAMLMap, YAMLSeq } from "yaml";
+import { asyncVisitor, isMap, isScalar, isSeq, LineCounter, Node, Pair, Scalar, visit, visitAsync, YAMLMap, YAMLSeq } from "yaml";
 import { DecoratedDocument } from "./fileLoader";
 import { dirname, isAbsolute, join } from "path";
 import { FileSystemError } from "vscode";
 import { ExecutionContext, SourceLocation } from "./executionContext";
-import { parseVariables, parseParameterArguments, parseParameterSpecAndMerge } from "./azurePipelines";
+import { parseVariables, parseParameterArguments, parseParameterSpecAndMerge, parseTemplateExpression } from "./azurePipelines";
 import { Expression, getExpression } from "./expression";
+import { addTemplateExpressions, isTemplateExpression } from "./templateExpression";
 
 export interface TraversalCallbacks {
     onTemplate(path: string, parametersReferenceId: number): Promise<void>
@@ -38,6 +39,14 @@ export class DocumentTraverser {
                 symbol: (value as any).key.value,
                 position
             };
+
+            if (isTemplateExpression(value.key as Node)) {
+                addTemplateExpressions(ctxt, parseTemplateExpression((value.key as Scalar).toString()));
+            }
+
+            if (isTemplateExpression(value.value as Node)) {
+                addTemplateExpressions(ctxt, parseTemplateExpression((value.key as Scalar).toString()));
+            }
 
             if (isScalar(value.key) && value.key.value === "parameters" && isSeq(value.value) && path.length === 2) {
                 let finalParams = getExpression(ctxt.paramsReferenceId);

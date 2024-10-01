@@ -101,3 +101,7 @@ export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {
 
     return ret;
 }
+
+export const parseTemplateExpression = (expression: string): Expression[] => {
+    return [];
+}

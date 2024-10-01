@@ -17,7 +17,7 @@ export class ExecutionContextManager {
 			executionPointer: null,
 			paramsReferenceId,
 			variablesReferenceId: -1,
-			scopesReferenceId: -1
+			templateExpressionsReferenceId: -1
 		});
 
 		return this.currentContext();
@@ -44,11 +44,11 @@ export class ExecutionContextManager {
 			});
 		}
 
-		if (ctxt.scopesReferenceId !== -1) {
+		if (ctxt.templateExpressionsReferenceId !== -1) {
 			ret.push({
 				expensive: false,
 				name: "Scopes",
-				variablesReference: ctxt.scopesReferenceId
+				variablesReference: ctxt.templateExpressionsReferenceId
 			});
 		}
 

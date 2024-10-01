@@ -17,5 +17,5 @@ export type ExecutionContext = {
 	executionPointer: ExecutionPointer | null;
 	paramsReferenceId: number;
 	variablesReferenceId: number;
-	scopesReferenceId: number
+	templateExpressionsReferenceId: number
 };
