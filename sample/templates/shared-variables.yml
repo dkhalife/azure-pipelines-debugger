@@ -1,0 +1,18 @@
+# ============================================================
+# Template: shared-variables.yml
+# ============================================================
+# Demonstrates a variable template – imported via:
+#   variables:
+#     - template: templates/shared-variables.yml
+#
+# The debugger enters this file just like any other template,
+# showing Variables populated from the definitions below.
+# ============================================================
+
+variables:
+  - name: artifactFeed
+    value: MyOrg/my-feed
+  - name: containerRegistry
+    value: myregistry.azurecr.io
+  - name: sonarQubeProject
+    value: my-project-key

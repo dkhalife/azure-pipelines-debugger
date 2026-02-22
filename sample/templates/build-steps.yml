@@ -1,0 +1,57 @@
+# ============================================================
+# Template: build-steps.yml
+# ============================================================
+# Included from the main pipeline via:
+#   - template: templates/build-steps.yml
+#
+# When the debugger enters this file you will see:
+#   - A new frame on the Call Stack labelled [template]
+#   - The Parameters scope populated with values from the caller
+#   - Template expressions resolved against those parameters
+#
+# Try:
+#   - Step Over (F10) to skip a step without entering children
+#   - Hover over a ${{ }} expression to see the resolved value
+#   - Add a Watch expression: parameters.buildConfiguration
+# ============================================================
+
+parameters:
+  - name: solution
+    type: string
+  - name: buildConfiguration
+    type: string
+    default: Debug
+  - name: runTests
+    type: boolean
+    default: true
+
+steps:
+  - task: NuGetToolInstaller@1
+    displayName: Install NuGet
+
+  - task: NuGetCommand@2
+    displayName: Restore ${{ parameters.solution }}
+    inputs:
+      restoreSolution: ${{ parameters.solution }}
+
+  - task: VSBuild@1
+    displayName: Build ${{ parameters.buildConfiguration }}
+    inputs:
+      solution: ${{ parameters.solution }}
+      configuration: ${{ parameters.buildConfiguration }}
+      platform: Any CPU
+
+  # Conditional inside a template – tests ${{ if }}
+  - ${{ if eq(parameters.runTests, 'true') }}:
+    - task: VSTest@2
+      displayName: Run unit tests (${{ parameters.buildConfiguration }})
+      inputs:
+        testSelector: testAssemblies
+        configuration: ${{ parameters.buildConfiguration }}
+
+  - ${{ if ne(parameters.buildConfiguration, 'Debug') }}:
+    - task: PublishBuildArtifacts@1
+      displayName: Publish artifacts
+      inputs:
+        PathtoPublish: $(Build.ArtifactStagingDirectory)
+        ArtifactName: drop-${{ parameters.buildConfiguration }}

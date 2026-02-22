@@ -1,0 +1,36 @@
+# ============================================================
+# Template: deploy-steps.yml
+# ============================================================
+# Called once per region inside a ${{ each }} loop.
+# The Call Stack shows the nesting:
+#   main pipeline → deploy-steps.yml (per-region)
+#
+# The Parameters scope shows the specific region and
+# environment passed by the caller for this iteration.
+# ============================================================
+
+parameters:
+  - name: environment
+    type: string
+  - name: region
+    type: string
+
+steps:
+  - script: |
+      echo "Deploying to ${{ parameters.region }} in ${{ parameters.environment }}"
+    displayName: Deploy to ${{ parameters.region }}
+
+  # Conditional: extra validation for production
+  - ${{ if eq(parameters.environment, 'production') }}:
+    - script: |
+        echo "Running post-deploy health check in ${{ parameters.region }}"
+      displayName: Health check (${{ parameters.region }})
+
+  - ${{ if ne(parameters.environment, 'production') }}:
+    - script: |
+        echo "Skipping health check – not production"
+      displayName: Skip health check
+
+  - script: |
+      echo "Deployment to ${{ parameters.region }} complete"
+    displayName: Finalize ${{ parameters.region }}

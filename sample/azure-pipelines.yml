@@ -1,0 +1,124 @@
+# ============================================================
+# Sample: Azure Pipelines Template Debugger – Main Pipeline
+# ============================================================
+# Open this file in the Extension Development Host and press F5
+# (or use the launch config "Debug sample pipeline") to walk
+# through template expansion, conditionals, loops, and more.
+#
+# Features demonstrated:
+#   - Parameters with defaults
+#   - Variables (name/value)
+#   - Template includes with parameter passing
+#   - ${{ if / elseif / else }} conditional blocks
+#   - ${{ each }} loop iteration
+#   - Template expressions in values (${{ parameters.* }})
+#   - Nested template calls (call stack depth > 1)
+#   - extends: template (separate sample – see extends-pipeline.yml)
+# ============================================================
+
+trigger:
+  branches:
+    include:
+      - main
+      - release/*
+
+# -- Parameters -----------------------------------------------
+# The debugger shows these in the "Parameters" scope.
+# Set breakpoints on lines below to inspect resolved values.
+parameters:
+  - name: environment
+    type: string
+    default: staging
+    values:
+      - dev
+      - staging
+      - production
+
+  - name: deployRegions
+    type: object
+    default:
+      - eastus
+      - westeurope
+      - southeastasia
+
+  - name: runTests
+    type: boolean
+    default: true
+
+  - name: buildConfiguration
+    type: string
+    default: Release
+
+# -- Variables ------------------------------------------------
+# Visible in the "Variables" scope while stepping.
+variables:
+  - name: solution
+    value: '**/*.sln'
+  - name: buildPlatform
+    value: Any CPU
+  - name: imageTag
+    value: ${{ parameters.buildConfiguration }}-latest
+
+# -- Stages ---------------------------------------------------
+stages:
+  # ── Build stage ──────────────────────────────────────────────
+  - stage: Build
+    displayName: Build ${{ parameters.buildConfiguration }}
+    jobs:
+      - job: BuildJob
+        displayName: Build and Test
+        pool:
+          vmImage: ubuntu-latest
+
+        steps:
+          # Include a shared template – Step In (F11) to enter it
+          - template: templates/build-steps.yml
+            parameters:
+              solution: ${{ variables.solution }}
+              buildConfiguration: ${{ parameters.buildConfiguration }}
+              runTests: ${{ parameters.runTests }}
+
+  # ── Deploy stage ─────────────────────────────────────────────
+  # Conditional: only runs when environment != 'dev'
+  - ${{ if ne(parameters.environment, 'dev') }}:
+    - stage: Deploy
+      displayName: Deploy to ${{ parameters.environment }}
+      dependsOn: Build
+      jobs:
+        # Loop: creates one job per region
+        - ${{ each region in parameters.deployRegions }}:
+          - job: Deploy_${{ region }}
+            displayName: Deploy to ${{ region }}
+            pool:
+              vmImage: ubuntu-latest
+            steps:
+              - template: templates/deploy-steps.yml
+                parameters:
+                  environment: ${{ parameters.environment }}
+                  region: ${{ region }}
+
+  # ── Conditional stages ───────────────────────────────────────
+  # if / elseif / else chain – step through to see branch taken
+  - ${{ if eq(parameters.environment, 'production') }}:
+    - stage: ProductionGate
+      displayName: Production approval gate
+      jobs:
+        - job: Approval
+          steps:
+            - script: echo "Waiting for production approval..."
+
+  - ${{ elseif eq(parameters.environment, 'staging') }}:
+    - stage: StagingSmoke
+      displayName: Staging smoke tests
+      jobs:
+        - job: SmokeTests
+          steps:
+            - script: echo "Running staging smoke tests..."
+
+  - ${{ else }}:
+    - stage: DevValidation
+      displayName: Dev validation
+      jobs:
+        - job: Validate
+          steps:
+            - script: echo "Running dev validation..."

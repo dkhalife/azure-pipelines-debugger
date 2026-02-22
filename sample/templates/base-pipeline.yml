@@ -1,0 +1,44 @@
+# ============================================================
+# Template: base-pipeline.yml  (used by extends)
+# ============================================================
+# This is the base template that extends-pipeline.yml extends.
+# When entered, the Call Stack shows [extends] instead of
+# [template] to distinguish the two inclusion models.
+#
+# Parameters received from the extending pipeline appear in
+# the Parameters scope just like a normal template call.
+# ============================================================
+
+parameters:
+  - name: buildConfiguration
+    type: string
+    default: Debug
+  - name: testProjects
+    type: string
+    default: '**/*Tests.csproj'
+
+stages:
+  - stage: Build
+    displayName: Build (${{ parameters.buildConfiguration }})
+    jobs:
+      - job: BuildJob
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - template: build-steps.yml
+            parameters:
+              solution: '**/*.sln'
+              buildConfiguration: ${{ parameters.buildConfiguration }}
+              runTests: true
+
+  - stage: Test
+    displayName: Test
+    dependsOn: Build
+    jobs:
+      - job: RunTests
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - script: |
+              echo "Testing projects: ${{ parameters.testProjects }}"
+            displayName: Run tests

@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "azurepipelines",
+            "request": "launch",
+            "name": "Debug: Main pipeline",
+            "pipeline": "${workspaceFolder}/azure-pipelines.yml",
+            "stopOnEntry": true
+        },
+        {
+            "type": "azurepipelines",
+            "request": "launch",
+            "name": "Debug: Extends pipeline",
+            "pipeline": "${workspaceFolder}/extends-pipeline.yml",
+            "stopOnEntry": true
+        },
+        {
+            "type": "azurepipelines",
+            "request": "launch",
+            "name": "Debug: Current file",
+            "pipeline": "${file}",
+            "stopOnEntry": true
+        }
+    ]
+}
