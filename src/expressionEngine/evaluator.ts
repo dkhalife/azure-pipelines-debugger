@@ -11,8 +11,14 @@ function resolveProperty(segments: string[], context: EvaluationContext): any {
     } else if (root === 'variables') {
         obj = context.variables;
     } else {
-        // Could be a single identifier used as function arg, return as-is
+        // Single identifier — check if it's a loop variable bound in parameters
         if (segments.length === 1) {
+            if (root in context.parameters) {
+                return context.parameters[root];
+            }
+            if (root in context.variables) {
+                return context.variables[root];
+            }
             return undefined;
         }
         throw new ExpressionError(`Unknown root '${root}'`, segments.join('.'));

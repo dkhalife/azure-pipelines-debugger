@@ -35,11 +35,27 @@ const builtins: Record<string, BuiltinFunction> = {
         assertMinArgs('or', args, 2, src);
         return args.some((a: any) => !!a);
     },
+    xor(args, src) {
+        assertMinArgs('xor', args, 2, src);
+        return !!args[0] !== !!args[1];
+    },
     contains(args, src) {
         assertMinArgs('contains', args, 2, src);
         const haystack = toStr(args[0]).toLowerCase();
         const needle = toStr(args[1]).toLowerCase();
         return haystack.includes(needle);
+    },
+    containsValue(args, src) {
+        assertMinArgs('containsValue', args, 2, src);
+        const collection = args[0];
+        const target = toStr(args[1]).toLowerCase();
+        if (Array.isArray(collection)) {
+            return collection.some(item => toStr(item).toLowerCase() === target);
+        }
+        if (typeof collection === 'object' && collection !== null) {
+            return Object.values(collection).some(val => toStr(val).toLowerCase() === target);
+        }
+        return false;
     },
     startsWith(args, src) {
         assertMinArgs('startsWith', args, 2, src);
@@ -48,6 +64,26 @@ const builtins: Record<string, BuiltinFunction> = {
     endsWith(args, src) {
         assertMinArgs('endsWith', args, 2, src);
         return toStr(args[0]).toLowerCase().endsWith(toStr(args[1]).toLowerCase());
+    },
+    ge(args, src) {
+        assertMinArgs('ge', args, 2, src);
+        return Number(args[0]) >= Number(args[1]);
+    },
+    gt(args, src) {
+        assertMinArgs('gt', args, 2, src);
+        return Number(args[0]) > Number(args[1]);
+    },
+    le(args, src) {
+        assertMinArgs('le', args, 2, src);
+        return Number(args[0]) <= Number(args[1]);
+    },
+    lt(args, src) {
+        assertMinArgs('lt', args, 2, src);
+        return Number(args[0]) < Number(args[1]);
+    },
+    iif(args, src) {
+        assertMinArgs('iif', args, 1, src);
+        return !!args[0] ? (args[1] ?? null) : (args[2] ?? null);
     },
     format(args, src) {
         assertMinArgs('format', args, 1, src);
@@ -62,7 +98,7 @@ const builtins: Record<string, BuiltinFunction> = {
         const sep = toStr(args[0]);
         const collection = args[1];
         if (!Array.isArray(collection)) {
-            throw new ExpressionError('join() second argument must be a collection', src);
+            return toStr(collection);
         }
         return collection.map(toStr).join(sep);
     },
@@ -102,6 +138,10 @@ const builtins: Record<string, BuiltinFunction> = {
     upper(args, src) {
         assertMinArgs('upper', args, 1, src);
         return toStr(args[0]).toUpperCase();
+    },
+    trim(args, src) {
+        assertMinArgs('trim', args, 1, src);
+        return toStr(args[0]).trim();
     },
     replace(args, src) {
         assertMinArgs('replace', args, 3, src);

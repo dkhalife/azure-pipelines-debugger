@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 
 const EXPRESSION_RE = /\$\{\{(.+?)\}\}/g;
+const CONTROL_FLOW_RE = /^\s*(if|elseif|else|each)\b/;
 
 const inlineDecorationType = vscode.window.createTextEditorDecorationType({
     after: {
@@ -38,6 +39,12 @@ async function updateDecorations(editor: vscode.TextEditor, session: vscode.Debu
 
         while ((match = EXPRESSION_RE.exec(line.text)) !== null) {
             if (isInComment(line.text, match.index)) {
+                continue;
+            }
+
+            // Skip control flow expressions — they are not value expressions
+            const inner = match[1];
+            if (CONTROL_FLOW_RE.test(inner)) {
                 continue;
             }
 
