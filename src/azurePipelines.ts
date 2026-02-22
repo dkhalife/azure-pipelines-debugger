@@ -1,5 +1,7 @@
 import { Node, Scalar, YAMLMap, YAMLSeq, isCollection, isMap, isScalar, isSeq } from "yaml";
 import { Expression, hasNamedChild } from "./expression";
+import { evaluate, ExpressionError } from "./expressionEngine/index";
+import { EvaluationContext } from "./expressionEngine/types";
 
 export function parseParameterArguments(params: YAMLMap<unknown, unknown> | YAMLSeq<unknown>): Expression[] {
     const ret: Expression[] = [];
@@ -102,17 +104,22 @@ export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {
     return ret;
 }
 
-export const parseTemplateExpression = (expression: string): Expression[] => {
-    if (expression.indexOf("and(") !== -1) {
-        return [
-            new Expression("and(eq(parameters.firstParam, '1'), eq(parameters.secondParam, '2'))", "false", [
-                new Expression("eq(parameters.firstParam, '1')", "true", [new Expression("parameters.firstParam", "1")]),
-                new Expression("eq(parameters.secondParam, '2')", "false", [new Expression("parameters.secondParam", "3")])
-            ])
-        ]
-    } else if (expression.indexOf("variables.foo") !== -1) {
-        return [new Expression("variables.foo", "hello")];
+export const parseTemplateExpression = (expression: string, context: EvaluationContext): Expression[] => {
+    // Strip ${{ }} wrapper if present
+    let inner = expression.trim();
+    if (inner.startsWith('${{')) {
+        inner = inner.slice(3, inner.endsWith('}}') ? -2 : undefined).trim();
     }
 
-    return [];
+    try {
+        const result = evaluate(inner, context);
+        const valueStr = result.value === null || result.value === undefined
+            ? ''
+            : typeof result.value === 'object' ? JSON.stringify(result.value) : String(result.value);
+        return [new Expression(inner, valueStr)];
+    } catch (e) {
+        // Fallback: show the raw expression with the error as value
+        const msg = e instanceof ExpressionError ? e.message : String(e);
+        return [new Expression(inner, `<error: ${msg}>`)];
+    }
 }

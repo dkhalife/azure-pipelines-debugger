@@ -29,7 +29,7 @@ export class DebugSession extends LoggingDebugSession {
 		response.body = response.body || {};
 
 		response.body.supportsConfigurationDoneRequest = true;
-		response.body.supportsEvaluateForHovers = false;
+		response.body.supportsEvaluateForHovers = true;
 		response.body.supportsStepBack = false;
 		response.body.supportsDataBreakpoints = false;
 		response.body.supportsCompletionsRequest = false;
@@ -51,6 +51,9 @@ export class DebugSession extends LoggingDebugSession {
 		response.body.supportTerminateDebuggee = false;
 		response.body.supportsFunctionBreakpoints = false;
 		response.body.supportsDelayedStackTraceLoading = true;
+		response.body.supportsConditionalBreakpoints = true;
+		response.body.supportsRestartRequest = true;
+		response.body.supportsLoadedSourcesRequest = true;
 
 		this.sendResponse(response);
 		this.sendEvent(new InitializedEvent());
@@ -142,6 +145,21 @@ export class DebugSession extends LoggingDebugSession {
 	protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {
 		response.body = this.debugger.getExceptionInfo();
 
+		this.sendResponse(response);
+	}
+
+	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+		const result = this.debugger.evaluateExpression(args.expression);
+		response.body = {
+			result: result.value,
+			type: result.type,
+			variablesReference: 0,
+		};
+		this.sendResponse(response);
+	}
+
+	protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments): void {
+		this.debugger.restart();
 		this.sendResponse(response);
 	}
 }

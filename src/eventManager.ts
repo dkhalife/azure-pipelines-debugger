@@ -1,4 +1,4 @@
-import { ContinuedEvent, LoggingDebugSession, StoppedEvent, TerminatedEvent } from "@vscode/debugadapter";
+import { ContinuedEvent, LoggingDebugSession, OutputEvent, StoppedEvent, TerminatedEvent } from "@vscode/debugadapter";
 import { Debugger } from "./debugger";
 
 export const registerEvents = (session: LoggingDebugSession, runtime: Debugger) => {
@@ -24,5 +24,9 @@ export const registerEvents = (session: LoggingDebugSession, runtime: Debugger) 
 
     runtime.on("stopOnBreakpoint", (threadId: number) => {
         session.sendEvent(new StoppedEvent('breakpoint', threadId));
+    });
+
+    runtime.on("output", (message: string, category: string) => {
+        session.sendEvent(new OutputEvent(message + '\n', category));
     });
 };

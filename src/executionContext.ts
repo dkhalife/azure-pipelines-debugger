@@ -1,5 +1,6 @@
 import { Subject } from 'await-notify';
 import { Variable } from '@vscode/debugadapter';
+import { EvaluationContext } from './expressionEngine/types';
 
 export type SourceLocation = {
 	line: number;
@@ -17,5 +18,10 @@ export type ExecutionContext = {
 	executionPointer: ExecutionPointer | null;
 	paramsReferenceId: number;
 	variablesReferenceId: number;
-	templateExpressionsReferenceId: number
+	templateExpressionsReferenceId: number;
+	evaluationContext: EvaluationContext;
+	/** Depth in the template include stack (0 = root pipeline) */
+	depth: number;
+	/** Whether this context represents an extends (vs a template include) */
+	isExtends: boolean;
 };

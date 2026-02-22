@@ -86,10 +86,11 @@
     "watch": "tsc -watch -p ./",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test:unit": "yarn run compile && mocha --ui tdd out/test/expressionEngine/**/*.test.js"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.7",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.1.0",
     "@types/path-browserify": "^1.0.2",
     "@types/vscode": "^1.92.0",
@@ -98,6 +99,7 @@
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.4.0",
     "eslint": "^8.57.0",
+    "mocha": "^11.7.5",
     "typescript": "^5.4.5"
   },
   "dependencies": {
