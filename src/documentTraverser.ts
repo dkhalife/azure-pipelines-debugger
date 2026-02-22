@@ -23,6 +23,20 @@ export type TraversalControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
 const CONDITIONAL_RE = /^\$\{\{\s*(if|elseif|else)\s*(.*?)\s*\}\}$/;
 const EACH_RE = /^\$\{\{\s*each\s+(\w+)\s+in\s+(.+?)\s*\}\}$/;
 
+function isLiteralArray(arr: any[]): boolean {
+    return arr.every(item => typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean');
+}
+
+function formatCollection(collection: any[]): string {
+    if (collection.length === 0) {
+        return '[]';
+    }
+    if (isLiteralArray(collection)) {
+        return '[' + collection.join(', ') + ']';
+    }
+    return `${collection.length} items`;
+}
+
 export class DocumentTraverser {
 	private shouldAbort: boolean = false;
     private lineCounter: LineCounter;
@@ -104,7 +118,7 @@ export class DocumentTraverser {
                     collection = [];
                 }
 
-                addTemplateExpressions(ctxt, [new Expression(keyStr, `${collection.length} items`)]);
+                addTemplateExpressions(ctxt, [new Expression(keyStr, formatCollection(collection))]);
 
                 for (let i = 0; i < collection.length; i++) {
                     // Bind the loop variable in the evaluation context
