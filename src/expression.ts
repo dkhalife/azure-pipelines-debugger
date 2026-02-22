@@ -2,11 +2,12 @@ import { Variable } from "@vscode/debugadapter";
 
 let expressionStore: Expression[] = [];
 export class Expression extends Variable {
-	private static next_id: number = 0;
+	// Start at 1 because DAP treats variablesReference=0 as "no children"
+	private static next_id: number = 1;
 
 	public static resetStore() {
 		expressionStore = [];
-		Expression.next_id = 0;
+		Expression.next_id = 1;
 	}
 
 	constructor(public readonly name: string, public value: string, public children: Expression[] = [], forceRef: boolean = false) {
@@ -19,11 +20,12 @@ export class Expression extends Variable {
 };
 
 export const getExpression = (id: number): Expression => {
-	if (id < 0 || id >= expressionStore.length) {
+	const index = id - 1; // IDs start at 1, array starts at 0
+	if (index < 0 || index >= expressionStore.length) {
 		throw new Error("Invalid argument: id=" + id);
 	}
 
-	return expressionStore[id] as Expression;
+	return expressionStore[index] as Expression;
 }
 
 export const hasNamedChild = (expr: Expression, name: string): boolean => {
