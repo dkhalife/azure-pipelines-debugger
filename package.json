@@ -3,6 +3,12 @@
   "displayName": "azure-pipeline-templates-debugger",
   "description": "",
   "version": "0.0.1",
+  "license": "MIT",
+  "publisher": "dkhalife",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dkhalife/azure-pipelines-debugger"
+  },
   "engines": {
     "vscode": "^1.92.0"
   },
@@ -98,6 +104,7 @@
     "@typescript-eslint/parser": "^7.11.0",
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^8.57.0",
     "mocha": "^11.7.5",
     "nyc": "^17.1.0",
