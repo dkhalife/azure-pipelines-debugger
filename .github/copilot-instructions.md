@@ -50,4 +50,3 @@ This is a **VS Code Debug Adapter** extension for Azure Pipelines YAML files. It
 - TypeScript strict mode is enabled but `noImplicitAny` is off.
 - `'use strict';` is used at the top of modules that interact with VS Code APIs.
 - The `FileAccessor` interface abstracts file I/O to allow future non-VS-Code hosts; `workspaceFileAccessor` is the VS Code implementation.
-- `TarversalControl` (sic) is the intentional spelling used for the traversal control type — do not "fix" it.

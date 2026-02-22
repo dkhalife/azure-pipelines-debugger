@@ -7,7 +7,7 @@ import { Scope, StackFrame, Thread, Variable } from "@vscode/debugadapter";
 import { DebugProtocol } from "@vscode/debugprotocol";
 import { BreakpointManager } from "./breakpointManager";
 import { ExecutionContextManager } from "./executionContextManager";
-import { DocumentTraverser, TarversalControl } from "./documentTraverser";
+import { DocumentTraverser, TraversalControl } from "./documentTraverser";
 import { Expression, getExpression } from "./expression";
 
 export type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
@@ -43,7 +43,7 @@ export class Debugger extends EventEmitter {
 	private breakpointManager: BreakpointManager = new BreakpointManager();
 	private executionContextManager: ExecutionContextManager = new ExecutionContextManager();
 	private static readonly MainThreadId: number = 1;
-	private traversalControl: TarversalControl = 'NextBreakPoint';
+	private traversalControl: TraversalControl = 'NextBreakPoint';
 	private stopOnNextNode: boolean = false;
 
 	constructor(fileAccessor: FileAccessor) {

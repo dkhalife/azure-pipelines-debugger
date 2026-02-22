@@ -11,10 +11,10 @@ export interface TraversalCallbacks {
     onTemplate(path: string, parametersReferenceId: number): Promise<void>
     onFileSystemError(message: string): Promise<void>
     onYamlParsingError(title: string, message: string, position: SourceLocation): Promise<void>
-    onStep(position: SourceLocation): Promise<TarversalControl>
+    onStep(position: SourceLocation): Promise<TraversalControl>
 }
 
-export type TarversalControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
+export type TraversalControl = 'NextBreakPoint' | 'StepOver' | 'StepInto';
 
 export class DocumentTraverser {
 	private shouldAbort: boolean = false;
