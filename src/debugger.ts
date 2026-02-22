@@ -145,6 +145,7 @@ export class Debugger extends EventEmitter {
 			}
 		});
 
+		traverser.prePopulateScopes();
 		return traverser.traverse();
 	}
 

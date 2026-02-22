@@ -149,8 +149,7 @@ export class DocumentTraverser {
                 return visit.SKIP; // We already traversed the body ourselves
             }
 
-            // Regular template expression evaluation
-            ctxt.templateExpressionsReferenceId = -1;
+            // Regular template expression evaluation — accumulate across steps
             if (isTemplateExpression(value.key as Node)) {
                 addTemplateExpressions(ctxt, parseTemplateExpression((value.key as Scalar).toString(), ctxt.evaluationContext));
             }
@@ -170,7 +169,7 @@ export class DocumentTraverser {
             }
 
             if (isScalar(value.key) && value.key.value === "variables" && isSeq(value.value)) {
-                const children = parseVariables(value.value);
+                const children = parseVariables(value.value, ctxt.evaluationContext);
 
                 if (children.length > 0) {
                     const vars = new Expression("Variables", "", children);
@@ -257,6 +256,47 @@ export class DocumentTraverser {
             }
         }
     };
+
+    /**
+     * Pre-scan the document's top-level to populate parameters and variables
+     * into the execution context before traversal begins, so they are visible
+     * from the very first stop (including stopOnEntry).
+     */
+    public prePopulateScopes(): void {
+        const ctxt = this.context;
+        const doc = this.doc.yaml;
+
+        if (!isMap(doc.contents)) {
+            return;
+        }
+
+        for (const item of doc.contents.items) {
+            if (!isScalar(item.key)) {
+                continue;
+            }
+
+            // Pre-populate parameter defaults from the spec
+            if (item.key.value === "parameters" && isSeq(item.value)) {
+                const finalParams = getExpression(ctxt.paramsReferenceId);
+                parseParameterSpecAndMerge(item.value, finalParams);
+                for (const child of finalParams.children) {
+                    ctxt.evaluationContext.parameters[child.name] = child.value;
+                }
+            }
+
+            // Pre-populate variables
+            if (item.key.value === "variables" && isSeq(item.value)) {
+                const children = parseVariables(item.value, ctxt.evaluationContext);
+                if (children.length > 0) {
+                    const vars = new Expression("Variables", "", children);
+                    ctxt.variablesReferenceId = vars.variablesReference;
+                    for (const child of children) {
+                        ctxt.evaluationContext.variables[child.name] = child.value;
+                    }
+                }
+            }
+        }
+    }
 
     public async traverse(): Promise<void> {
         const errors = this.doc.yaml.errors;

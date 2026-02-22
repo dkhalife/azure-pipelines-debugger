@@ -1,7 +1,9 @@
 import { Node, Scalar, YAMLMap, YAMLSeq, isCollection, isMap, isScalar, isSeq } from "yaml";
 import { Expression, hasNamedChild } from "./expression";
-import { evaluate, ExpressionError } from "./expressionEngine/index";
+import { evaluate, evaluateTemplateString, ExpressionError } from "./expressionEngine/index";
+import { AstNode } from "./expressionEngine/types";
 import { EvaluationContext } from "./expressionEngine/types";
+import { parse } from "./expressionEngine/parser";
 
 export function parseParameterArguments(params: YAMLMap<unknown, unknown> | YAMLSeq<unknown>): Expression[] {
     const ret: Expression[] = [];
@@ -72,7 +74,7 @@ export function parseParameterSpecAndMerge(params: YAMLSeq<unknown>, finalParams
     }
 }
 
-export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {
+export function parseVariables(vars: YAMLSeq<unknown>, context?: EvaluationContext): Expression[] {
     let ret: Expression[] = [];
 
     for (const v of vars.items) {
@@ -98,10 +100,83 @@ export function parseVariables(vars: YAMLSeq<unknown>): Expression[] {
             continue;
         }
 
-        ret.push(new Expression(name, value));
+        // Resolve any ${{ }} expressions in the value
+        if (context && value.includes('${{')) {
+            try {
+                const result = evaluateTemplateString(value, context);
+                const resolved = result.value === null || result.value === undefined
+                    ? ''
+                    : typeof result.value === 'object' ? JSON.stringify(result.value) : String(result.value);
+                ret.push(new Expression(name, resolved));
+            } catch {
+                ret.push(new Expression(name, value));
+            }
+        } else {
+            ret.push(new Expression(name, value));
+        }
     }
 
     return ret;
+}
+
+function formatValue(value: any): string {
+    if (value === null || value === undefined) { return ''; }
+    if (typeof value === 'object') { return JSON.stringify(value); }
+    return String(value);
+}
+
+function astNodeToString(node: AstNode): string {
+    switch (node.kind) {
+        case 'Literal':
+            if (node.literalType === 'string') { return `'${node.value}'`; }
+            return String(node.value);
+        case 'PropertyAccess':
+            return node.source;
+        case 'FunctionCall':
+            return `${node.name}(${node.args.map(astNodeToString).join(', ')})`;
+        case 'BinaryExpression':
+            return `${astNodeToString(node.left)} ${node.operator} ${astNodeToString(node.right)}`;
+        case 'IndexAccess':
+            return `${astNodeToString(node.object)}[${astNodeToString(node.index)}]`;
+    }
+}
+
+function buildExpressionTree(node: AstNode, context: EvaluationContext): Expression {
+    const label = astNodeToString(node);
+
+    switch (node.kind) {
+        case 'Literal': {
+            return new Expression(label, formatValue(node.value));
+        }
+        case 'PropertyAccess': {
+            const value = evaluate(node.source, context);
+            return new Expression(label, formatValue(value.value));
+        }
+        case 'FunctionCall': {
+            const children = node.args.map(arg => buildExpressionTree(arg, context));
+            let value: any;
+            try { value = evaluate(label, context).value; } catch { value = '<error>'; }
+            return new Expression(label, formatValue(value), children);
+        }
+        case 'BinaryExpression': {
+            const children = [
+                buildExpressionTree(node.left, context),
+                buildExpressionTree(node.right, context),
+            ];
+            let value: any;
+            try { value = evaluate(label, context).value; } catch { value = '<error>'; }
+            return new Expression(label, formatValue(value), children);
+        }
+        case 'IndexAccess': {
+            const children = [
+                buildExpressionTree(node.object, context),
+                buildExpressionTree(node.index, context),
+            ];
+            let value: any;
+            try { value = evaluate(label, context).value; } catch { value = '<error>'; }
+            return new Expression(label, formatValue(value), children);
+        }
+    }
 }
 
 export const parseTemplateExpression = (expression: string, context: EvaluationContext): Expression[] => {
@@ -112,13 +187,10 @@ export const parseTemplateExpression = (expression: string, context: EvaluationC
     }
 
     try {
-        const result = evaluate(inner, context);
-        const valueStr = result.value === null || result.value === undefined
-            ? ''
-            : typeof result.value === 'object' ? JSON.stringify(result.value) : String(result.value);
-        return [new Expression(inner, valueStr)];
+        const ast = parse(inner);
+        const tree = buildExpressionTree(ast, context);
+        return [tree];
     } catch (e) {
-        // Fallback: show the raw expression with the error as value
         const msg = e instanceof ExpressionError ? e.message : String(e);
         return [new Expression(inner, `<error: ${msg}>`)];
     }
