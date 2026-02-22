@@ -1,5 +1,8 @@
 # Azure Pipelines Template Debugger
 
+[![CI](https://github.com/dkhalife/azure-pipelines-debugger/actions/workflows/ci.yml/badge.svg)](https://github.com/dkhalife/azure-pipelines-debugger/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/dkhalife/azure-pipelines-debugger/graph/badge.svg)](https://codecov.io/gh/dkhalife/azure-pipelines-debugger)
+
 **Understand your templates, one step at a time.**
 
 Azure Pipelines Template Debugger is a VS Code extension that lets you set breakpoints in Azure Pipelines YAML files and step through template expansion — seeing how parameters flow, how `${{ }}` expressions resolve, and which conditional branches are taken — all without executing any pipeline tasks.

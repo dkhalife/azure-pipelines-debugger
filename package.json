@@ -100,6 +100,7 @@
     "@vscode/test-electron": "^2.4.0",
     "eslint": "^8.57.0",
     "mocha": "^11.7.5",
+    "nyc": "^17.1.0",
     "typescript": "^5.4.5"
   },
   "dependencies": {
