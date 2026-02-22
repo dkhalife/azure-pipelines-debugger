@@ -26,7 +26,7 @@ export const getExpression = (id: number): Expression => {
 	}
 
 	return expressionStore[index] as Expression;
-}
+};
 
 export const hasNamedChild = (expr: Expression, name: string): boolean => {
 	for (const child of expr.children) {
@@ -36,4 +36,4 @@ export const hasNamedChild = (expr: Expression, name: string): boolean => {
 	}
 
 	return false;
-}
+};

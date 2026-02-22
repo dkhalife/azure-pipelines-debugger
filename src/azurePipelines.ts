@@ -43,7 +43,7 @@ export function parseParameterSpecAndMerge(params: YAMLSeq<unknown>, finalParams
 
         let name: string | null = null;
         let defaultValue: Expression[] | undefined;
-        let defaultValueJSON: string | null = null
+        let defaultValueJSON: string | null = null;
         let skip = false;
 
         for (const attribute of v.items) {
@@ -59,7 +59,7 @@ export function parseParameterSpecAndMerge(params: YAMLSeq<unknown>, finalParams
                 if (isScalar(attribute.value)) {
                     defaultValueJSON = attribute.value.toString();
                 } else if (isMap(attribute.value) || isSeq(attribute.value)) {
-                    defaultValue = parseParameterArguments(attribute.value)
+                    defaultValue = parseParameterArguments(attribute.value);
                     defaultValueJSON = JSON.stringify(attribute.value.toJSON());
                 }
             }
@@ -194,4 +194,4 @@ export const parseTemplateExpression = (expression: string, context: EvaluationC
         const msg = e instanceof ExpressionError ? e.message : String(e);
         return [new Expression(inner, `<error: ${msg}>`)];
     }
-}
+};
