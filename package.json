@@ -97,24 +97,24 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.1.0",
-    "@types/path-browserify": "^1.0.2",
-    "@types/vscode": "^1.92.0",
-    "@typescript-eslint/eslint-plugin": "^7.14.1",
-    "@typescript-eslint/parser": "^7.11.0",
-    "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.4.0",
+    "@types/node": "^22.19.13",
+    "@types/path-browserify": "^1.0.3",
+    "@types/vscode": "^1.109.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
-    "eslint": "^8.57.0",
+    "eslint": "^8.57.1",
     "mocha": "^11.7.5",
     "nyc": "^17.1.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@vscode/debugadapter": "^1.66.0",
-    "@vscode/debugprotocol": "^1.66.0",
+    "@vscode/debugadapter": "^1.68.0",
+    "@vscode/debugprotocol": "^1.68.0",
     "await-notify": "^1.0.1",
     "path-browserify": "^1.0.1",
-    "yaml": "^2.5.0"
+    "yaml": "^2.8.2"
   }
 }
