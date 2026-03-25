@@ -115,7 +115,7 @@
     "@vscode/debugprotocol": "^1.68.0",
     "await-notify": "^1.0.1",
     "path-browserify": "^1.0.1",
-    "yaml": "^2.8.2"
+    "yaml": "^2.8.3"
   },
   "resolutions": {
     "serialize-javascript": "^7.0.4"
