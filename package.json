@@ -118,6 +118,6 @@
     "yaml": "^2.8.3"
   },
   "resolutions": {
-    "serialize-javascript": "^7.0.4"
+    "serialize-javascript": "^7.0.5"
   }
 }
