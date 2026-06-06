@@ -76,7 +76,7 @@ The `sample/` directory contains demo Azure Pipelines YAML files that exercise e
 
 ## Conventions
 
-- The extension uses **yarn** (with a `.yarnrc`); do not use npm.
+- The extension uses modern **Yarn** (Berry / v4, pinned via the `packageManager` field and configured in `.yarnrc.yml`); do not use npm.
 - TypeScript strict mode is enabled but `noImplicitAny` is off.
 - `'use strict';` is used at the top of modules that interact with VS Code APIs.
 - The `FileAccessor` interface abstracts file I/O to allow future non-VS-Code hosts; `workspaceFileAccessor` is the VS Code implementation.
