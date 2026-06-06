@@ -118,7 +118,7 @@ debugSession.ts                       ← DAP request/response handling
 ### 📃 Requirements
 
 * [Node.js](https://nodejs.org) 18+
-* [yarn](https://yarnpkg.com) 1.x
+* [yarn](https://yarnpkg.com) (Berry / v4, via Corepack)
 
 ### Build & Test
 
